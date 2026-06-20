@@ -280,8 +280,15 @@ function HomeTab({ units, tenants, activeNotices, payments, onSelectTenant, setT
   }
 
   const disputePayment = async (payment) => {
-    await supabase.from("payment_records").update({ verification_status: "Disputed" }).eq("id", payment.id)
-    setPayments(ps => ps.map(p => p.id === payment.id ? { ...p, verification_status: "Disputed" } : p))
+    const reason = window.prompt("Reason for dispute (the tenant will see this). Leave blank to skip:", "")
+    if (reason === null) return
+    const trimmed = reason.trim() || null
+    let { error } = await supabase.from("payment_records").update({ verification_status: "Disputed", dispute_reason: trimmed }).eq("id", payment.id)
+    if (error) {
+      // dispute_reason column may not exist yet; fall back to disputing without it
+      await supabase.from("payment_records").update({ verification_status: "Disputed" }).eq("id", payment.id)
+    }
+    setPayments(ps => ps.map(p => p.id === payment.id ? { ...p, verification_status: "Disputed", dispute_reason: trimmed } : p))
   }
 
   return (

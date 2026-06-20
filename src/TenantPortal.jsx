@@ -33,6 +33,9 @@ const LANGS = {
     payNow: "Pay now", paid: "Paid", unpaid: "Unpaid", overdue: "Overdue", pending: "Pending",
     iHavePaid: "I've paid", verifying: "Confirming payment...",
     verifyingDesc: "Your landlord will confirm your payment shortly.",
+    confirmed: "Confirmed", disputed: "Needs attention",
+    disputedDesc: "Your landlord could not confirm this payment. Please review and pay again.",
+    disputeReason: "Reason",
     dueBy: "Due by", paidOn: "Paid on",
     totalDue: "Total due", rent: "Rent", water: "Water", electricity: "Electricity",
     chooseApp: "Pay using",
@@ -85,6 +88,9 @@ const LANGS = {
     payNow: "अभी भुगतान करें", paid: "भुगतान हुआ", unpaid: "बकाया", overdue: "विलंबित", pending: "लंबित",
     iHavePaid: "मैंने भुगतान किया", verifying: "भुगतान की पुष्टि हो रही है...",
     verifyingDesc: "आपके मकान मालिक जल्द ही पुष्टि करेंगे।",
+    confirmed: "पुष्टि हो गई", disputed: "ध्यान दें",
+    disputedDesc: "आपके मकान मालिक इस भुगतान की पुष्टि नहीं कर सके। कृपया जांचें और दोबारा भुगतान करें।",
+    disputeReason: "कारण",
     dueBy: "देय तिथि", paidOn: "भुगतान तिथि",
     totalDue: "कुल देय", rent: "किराया", water: "पानी", electricity: "बिजली",
     chooseApp: "भुगतान करें",
@@ -137,6 +143,9 @@ const LANGS = {
     payNow: "இப்போது செலுத்து", paid: "செலுத்தியது", unpaid: "நிலுவை", overdue: "தாமதம்", pending: "நிலுவை",
     iHavePaid: "செலுத்தினேன்", verifying: "கட்டணம் உறுதிப்படுத்தப்படுகிறது...",
     verifyingDesc: "உங்கள் வீட்டுடமையாளர் விரைவில் உறுதிப்படுத்துவார்.",
+    confirmed: "உறுதிப்படுத்தப்பட்டது", disputed: "கவனம் தேவை",
+    disputedDesc: "உங்கள் வீட்டுடமையாளர் இந்தக் கட்டணத்தை உறுதிப்படுத்த முடியவில்லை. சரிபார்த்து மீண்டும் செலுத்தவும்.",
+    disputeReason: "காரணம்",
     dueBy: "கடைசி தேதி", paidOn: "செலுத்திய தேதி",
     totalDue: "மொத்த தொகை", rent: "வாடகை", water: "தண்ணீர்", electricity: "மின்சாரம்",
     chooseApp: "செலுத்தவும்",
@@ -188,6 +197,9 @@ const LANGS = {
     payNow: "ఇప్పుడు చెల్లించు", paid: "చెల్లించబడింది", unpaid: "బకాయి", overdue: "ఆలస్యం", pending: "పెండింగ్",
     iHavePaid: "నేను చెల్లించాను", verifying: "చెల్లింపు నిర్ధారిస్తున్నాం...",
     verifyingDesc: "మీ యజమాని త్వరలో నిర్ధారిస్తారు.",
+    confirmed: "నిర్ధారించబడింది", disputed: "శ్రద్ధ అవసరం",
+    disputedDesc: "మీ యజమాని ఈ చెల్లింపును నిర్ధారించలేకపోయారు. దయచేసి సరిచూసి మళ్లీ చెల్లించండి.",
+    disputeReason: "కారణం",
     dueBy: "చివరి తేదీ", paidOn: "చెల్లింపు తేదీ",
     totalDue: "మొత్తం", rent: "అద్దె", water: "నీరు", electricity: "విద్యుత్",
     chooseApp: "చెల్లించండి",
@@ -239,6 +251,9 @@ const LANGS = {
     payNow: "ಈಗ ಪಾವತಿಸಿ", paid: "ಪಾವತಿಯಾಗಿದೆ", unpaid: "ಬಾಕಿ", overdue: "ತಡ", pending: "ಬಾಕಿ ಇದೆ",
     iHavePaid: "ನಾನು ಪಾವತಿಸಿದ್ದೇನೆ", verifying: "ಪಾವತಿ ದೃಢೀಕರಿಸಲಾಗುತ್ತಿದೆ...",
     verifyingDesc: "ನಿಮ್ಮ ಮನೆಮಾಲೀಕರು ಶೀಘ್ರ ದೃಢೀಕರಿಸುತ್ತಾರೆ.",
+    confirmed: "ದೃಢೀಕರಿಸಲಾಗಿದೆ", disputed: "ಗಮನ ಅಗತ್ಯವಿದೆ",
+    disputedDesc: "ನಿಮ್ಮ ಮನೆಮಾಲೀಕರು ಈ ಪಾವತಿಯನ್ನು ದೃಢೀಕರಿಸಲಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪಾವತಿಸಿ.",
+    disputeReason: "ಕಾರಣ",
     dueBy: "ಕಟ್ಟಕಡೆಯ ದಿನಾಂಕ", paidOn: "ಪಾವತಿ ದಿನಾಂಕ",
     totalDue: "ಒಟ್ಟು ಮೊತ್ತ", rent: "ಬಾಡಿಗೆ", water: "ನೀರು", electricity: "ವಿದ್ಯುತ್",
     chooseApp: "ಪಾವತಿಸಿ",
@@ -468,6 +483,7 @@ function PaymentsTab({ tenant, unit, payments, setPayments, lt }) {
 
       {[...payments].reverse().map(p => {
         const isVerifying = p.verification_status === "Pending Verification"
+        const isDisputed = p.verification_status === "Disputed"
         const canPay = p.status === "Unpaid" && !isVerifying
         const od = isOverdue(p.month, p.year)
 
@@ -482,11 +498,24 @@ function PaymentsTab({ tenant, unit, payments, setPayments, lt }) {
                   </div>
                   {isVerifying && <div style={{ fontSize: 11, color: C.accent, marginTop: 3, fontWeight: 500 }}>{lt.verifying}</div>}
                 </div>
-                {p.status === "Paid" ? <Pill label={lt.paid} color={C.green} bg={C.greenSoft} border={C.greenBorder} /> :
+                {p.status === "Paid" ? <Pill label={lt.confirmed || lt.paid} color={C.green} bg={C.greenSoft} border={C.greenBorder} /> :
                   isVerifying ? <Pill label={lt.verifying} color={C.accent} bg={C.accentSoft} border={C.accentBorder} /> :
+                  isDisputed ? <Pill label={lt.disputed} color={C.red} bg={C.redSoft} border={C.redBorder} /> :
                   od ? <Pill label={lt.overdue} color={C.red} bg={C.redSoft} border={C.redBorder} /> :
                   <Pill label={lt.pending} color={C.amber} bg={C.amberSoft} border={C.amberBorder} />}
               </div>
+
+              {isDisputed && (
+                <div style={{ background: C.redSoft, border: `0.5px solid ${C.redBorder}`, borderRadius: 10, padding: "10px 12px", marginBottom: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.red, marginBottom: 3 }}>{lt.disputed}</div>
+                  <div style={{ fontSize: 12, color: C.sub, lineHeight: 1.5 }}>{lt.disputedDesc}</div>
+                  {p.dispute_reason && (
+                    <div style={{ fontSize: 12, color: C.text, marginTop: 6 }}>
+                      <span style={{ color: C.muted }}>{lt.disputeReason}: </span>{p.dispute_reason}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
                 <div style={{ background: C.bg, borderRadius: 8, padding: "4px 10px", fontSize: 12, color: C.sub }}>{lt.rent}: {fmt(p.amount)}</div>
