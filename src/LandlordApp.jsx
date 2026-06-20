@@ -726,6 +726,8 @@ function TenantDetail({ tenant, unit, onClose, setTenants, setUnits, setActiveNo
   const [billForm, setBillForm] = useState({ water_bill: "", electricity_bill: "", notes: "" })
   const [showNoticeForm, setShowNoticeForm] = useState(false)
   const [moveOutDate, setMoveOutDate] = useState("")
+  const [agreementDoc, setAgreementDoc] = useState(null)
+  const [uploadingAgreement, setUploadingAgreement] = useState(false)
 
   const paysWater = WATER_UNIT_IDS.includes(unit.id)
   const paysElec = ELEC_TENANT_IDS.includes(tenant.id)
@@ -735,7 +737,8 @@ function TenantDetail({ tenant, unit, onClose, setTenants, setUnits, setActiveNo
       supabase.from("payment_records").select("*").eq("tenant_id", tenant.id).order("year").order("month"),
       supabase.from("notices").select("*").eq("tenant_id", tenant.id).order("id", { ascending: false }).limit(1),
       supabase.storage.from("documents").list(`${tenant.id}`, { limit: 50 }),
-    ]).then(async ([{ data: p }, { data: n }, { data: files }]) => {
+      supabase.storage.from("documents").list(`agreements/${tenant.id}`, { limit: 10 }),
+    ]).then(async ([{ data: p }, { data: n }, { data: files }, { data: agFiles }]) => {
       if (p) setPayments(p)
       if (n && n.length > 0) setNotice(n[0])
       if (files && files.length > 0) {
@@ -745,9 +748,29 @@ function TenantDetail({ tenant, unit, onClose, setTenants, setUnits, setActiveNo
         }))
         setTenantDocs(docs.filter(d => d.url))
       }
+      if (agFiles && agFiles.length > 0) {
+        const latest = agFiles[agFiles.length - 1]
+        const { data: u } = await supabase.storage.from("documents").createSignedUrl(`agreements/${tenant.id}/${latest.name}`, 3600)
+        if (u?.signedUrl) setAgreementDoc({ name: latest.name, url: u.signedUrl })
+      }
       setLoading(false)
     })
   }, [tenant.id])
+
+  const uploadAgreement = async (file) => {
+    if (!file) return
+    setUploadingAgreement(true)
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_")
+    const path = `agreements/${tenant.id}/${Date.now()}_${safeName}`
+    const { error: upErr } = await supabase.storage.from("documents").upload(path, file, { upsert: false })
+    if (upErr) { alert("Upload failed: " + upErr.message); setUploadingAgreement(false); return }
+    const { data: u } = await supabase.storage.from("documents").createSignedUrl(path, 3600)
+    if (u?.signedUrl) setAgreementDoc({ name: `${Date.now()}_${safeName}`, url: u.signedUrl })
+    await supabase.from("tenants").update({ agreement_status: "Complete" }).eq("id", tenant.id)
+    setTenants(ts => ts.map(t => t.id === tenant.id ? { ...t, agreement_status: "Complete" } : t))
+    tenant.agreement_status = "Complete"
+    setUploadingAgreement(false)
+  }
 
   const outstanding = payments.filter(p => p.status === "Unpaid").reduce((s, p) => s + Number(p.total_due || p.amount), 0)
 
@@ -872,19 +895,40 @@ function TenantDetail({ tenant, unit, onClose, setTenants, setUnits, setActiveNo
           </div>
 
           {/* Agreement */}
-          <div style={{ background: C.bg, borderRadius: 12, padding: "13px 14px", marginBottom: 12, border: `0.5px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <div style={{ fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>{lt.agreement}</div>
-              {tenant.agreement_status === "Pending" && <Pill label={lt.noAgreement} color={C.red} bg={C.redSoft} border={C.redBorder} />}
-              {tenant.agreement_status === "Requested" && <Pill label={lt.docsRequested} color={C.amber} bg={C.amberSoft} border={C.amberBorder} />}
-              {tenant.agreement_status === "Documents Submitted" && <Pill label={lt.docsReceived} color={C.green} bg={C.greenSoft} border={C.greenBorder} />}
-              {tenant.agreement_status === "Complete" && <Pill label="Complete" color={C.green} bg={C.greenSoft} border={C.greenBorder} />}
+          <div style={{ background: C.bg, borderRadius: 12, padding: "13px 14px", marginBottom: 12, border: `0.5px solid ${C.border}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>{lt.agreement}</div>
+                {tenant.agreement_status === "Pending" && <Pill label={lt.noAgreement} color={C.red} bg={C.redSoft} border={C.redBorder} />}
+                {tenant.agreement_status === "Requested" && <Pill label={lt.docsRequested} color={C.amber} bg={C.amberSoft} border={C.amberBorder} />}
+                {tenant.agreement_status === "Documents Submitted" && <Pill label={lt.docsReceived} color={C.green} bg={C.greenSoft} border={C.greenBorder} />}
+                {tenant.agreement_status === "Complete" && <Pill label="Complete" color={C.green} bg={C.greenSoft} border={C.greenBorder} />}
+              </div>
+              {tenant.agreement_status !== "Complete" && (
+                <button onClick={requestAgreement} style={{ padding: "7px 12px", background: C.accentSoft, border: `0.5px solid ${C.accentBorder}`, borderRadius: 10, cursor: "pointer", fontWeight: 600, color: C.accent, fontSize: 12, fontFamily: "inherit" }}>
+                  {lt.requestDocs}
+                </button>
+              )}
             </div>
-            {tenant.agreement_status !== "Complete" && (
-              <button onClick={requestAgreement} style={{ padding: "7px 12px", background: C.accentSoft, border: `0.5px solid ${C.accentBorder}`, borderRadius: 10, cursor: "pointer", fontWeight: 600, color: C.accent, fontSize: 12, fontFamily: "inherit" }}>
-                {lt.requestDocs}
-              </button>
+
+            {agreementDoc && (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, paddingTop: 12, borderTop: `0.5px solid ${C.border}` }}>
+                <div style={{ flex: 1, fontSize: 13, color: C.text, fontWeight: 500 }}>Signed agreement</div>
+                <a href={agreementDoc.url} target="_blank" rel="noreferrer"
+                  style={{ padding: "6px 12px", background: C.accentSoft, border: `0.5px solid ${C.accentBorder}`, borderRadius: 10, textDecoration: "none", fontSize: 12, color: C.accent, fontWeight: 600 }}>
+                  View
+                </a>
+              </div>
             )}
+
+            <label style={{ display: "block", marginTop: 12 }}>
+              <input type="file" accept="application/pdf,image/*" disabled={uploadingAgreement}
+                onChange={e => uploadAgreement(e.target.files?.[0])}
+                style={{ display: "none" }} />
+              <div style={{ width: "100%", padding: "11px", background: C.surface, border: `1px dashed ${C.accentBorder}`, borderRadius: 12, cursor: uploadingAgreement ? "default" : "pointer", fontWeight: 600, color: C.accent, fontSize: 13, textAlign: "center", fontFamily: "inherit", boxSizing: "border-box" }}>
+                {uploadingAgreement ? "Uploading..." : agreementDoc ? "Replace agreement" : "Upload agreement (PDF or photo)"}
+              </div>
+            </label>
           </div>
 
           {/* Documents */}
