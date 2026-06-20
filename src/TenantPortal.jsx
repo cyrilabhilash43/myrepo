@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { supabase } from "./supabase"
+import { getPushState, enablePush } from "./push"
 
 const fmt = (n) => "₹" + Number(n).toLocaleString("en-IN")
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
@@ -36,6 +37,10 @@ const LANGS = {
     confirmed: "Confirmed", disputed: "Needs attention",
     disputedDesc: "Your landlord could not confirm this payment. Please review and pay again.",
     disputeReason: "Reason",
+    notifTitle: "Get notified", notifDesc: "Turn on alerts for payment confirmations, new bills, and updates.",
+    notifEnable: "Enable notifications", notifOn: "Notifications are on", notifWorking: "Turning on...",
+    notifInstall: "To get alerts on iPhone: tap the Share icon, choose 'Add to Home Screen', then open the app from your home screen and enable here.",
+    notifBlocked: "Notifications are blocked. Turn them on in your browser settings.",
     dueBy: "Due by", paidOn: "Paid on",
     totalDue: "Total due", rent: "Rent", water: "Water", electricity: "Electricity",
     chooseApp: "Pay using",
@@ -91,6 +96,10 @@ const LANGS = {
     confirmed: "पुष्टि हो गई", disputed: "ध्यान दें",
     disputedDesc: "आपके मकान मालिक इस भुगतान की पुष्टि नहीं कर सके। कृपया जांचें और दोबारा भुगतान करें।",
     disputeReason: "कारण",
+    notifTitle: "सूचनाएं पाएं", notifDesc: "भुगतान पुष्टि, नए बिल और अपडेट के लिए अलर्ट चालू करें।",
+    notifEnable: "सूचनाएं चालू करें", notifOn: "सूचनाएं चालू हैं", notifWorking: "चालू हो रहा है...",
+    notifInstall: "iPhone पर अलर्ट के लिए: शेयर आइकन दबाएं, 'Add to Home Screen' चुनें, फिर होम स्क्रीन से ऐप खोलें और यहां चालू करें।",
+    notifBlocked: "सूचनाएं अवरुद्ध हैं। उन्हें ब्राउज़र सेटिंग्स में चालू करें।",
     dueBy: "देय तिथि", paidOn: "भुगतान तिथि",
     totalDue: "कुल देय", rent: "किराया", water: "पानी", electricity: "बिजली",
     chooseApp: "भुगतान करें",
@@ -146,6 +155,10 @@ const LANGS = {
     confirmed: "உறுதிப்படுத்தப்பட்டது", disputed: "கவனம் தேவை",
     disputedDesc: "உங்கள் வீட்டுடமையாளர் இந்தக் கட்டணத்தை உறுதிப்படுத்த முடியவில்லை. சரிபார்த்து மீண்டும் செலுத்தவும்.",
     disputeReason: "காரணம்",
+    notifTitle: "அறிவிப்புகள் பெறுங்கள்", notifDesc: "கட்டண உறுதி, புதிய பில்கள் மற்றும் புதுப்பிப்புகளுக்கான விழிப்பூட்டல்களை இயக்கவும்.",
+    notifEnable: "அறிவிப்புகளை இயக்கு", notifOn: "அறிவிப்புகள் இயக்கப்பட்டுள்ளன", notifWorking: "இயக்குகிறது...",
+    notifInstall: "iPhone இல் விழிப்பூட்டல்களுக்கு: Share ஐகானை அழுத்தி, 'Add to Home Screen' தேர்வுசெய்து, பின்னர் ஹோம் ஸ்கிரீனில் இருந்து ஆப்பைத் திறந்து இங்கே இயக்கவும்.",
+    notifBlocked: "அறிவிப்புகள் தடுக்கப்பட்டுள்ளன. உலாவி அமைப்புகளில் இயக்கவும்.",
     dueBy: "கடைசி தேதி", paidOn: "செலுத்திய தேதி",
     totalDue: "மொத்த தொகை", rent: "வாடகை", water: "தண்ணீர்", electricity: "மின்சாரம்",
     chooseApp: "செலுத்தவும்",
@@ -200,6 +213,10 @@ const LANGS = {
     confirmed: "నిర్ధారించబడింది", disputed: "శ్రద్ధ అవసరం",
     disputedDesc: "మీ యజమాని ఈ చెల్లింపును నిర్ధారించలేకపోయారు. దయచేసి సరిచూసి మళ్లీ చెల్లించండి.",
     disputeReason: "కారణం",
+    notifTitle: "నోటిఫికేషన్లు పొందండి", notifDesc: "చెల్లింపు నిర్ధారణలు, కొత్త బిల్లులు మరియు అప్‌డేట్‌ల కోసం హెచ్చరికలను ఆన్ చేయండి.",
+    notifEnable: "నోటిఫికేషన్లు ఆన్ చేయి", notifOn: "నోటిఫికేషన్లు ఆన్‌లో ఉన్నాయి", notifWorking: "ఆన్ చేస్తోంది...",
+    notifInstall: "iPhoneలో హెచ్చరికల కోసం: షేర్ చిహ్నాన్ని నొక్కి, 'Add to Home Screen' ఎంచుకుని, ఆపై హోమ్ స్క్రీన్ నుండి యాప్ తెరిచి ఇక్కడ ఆన్ చేయండి.",
+    notifBlocked: "నోటిఫికేషన్లు బ్లాక్ చేయబడ్డాయి. బ్రౌజర్ సెట్టింగ్‌లలో ఆన్ చేయండి.",
     dueBy: "చివరి తేదీ", paidOn: "చెల్లింపు తేదీ",
     totalDue: "మొత్తం", rent: "అద్దె", water: "నీరు", electricity: "విద్యుత్",
     chooseApp: "చెల్లించండి",
@@ -254,6 +271,10 @@ const LANGS = {
     confirmed: "ದೃಢೀಕರಿಸಲಾಗಿದೆ", disputed: "ಗಮನ ಅಗತ್ಯವಿದೆ",
     disputedDesc: "ನಿಮ್ಮ ಮನೆಮಾಲೀಕರು ಈ ಪಾವತಿಯನ್ನು ದೃಢೀಕರಿಸಲಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪಾವತಿಸಿ.",
     disputeReason: "ಕಾರಣ",
+    notifTitle: "ಅಧಿಸೂಚನೆಗಳನ್ನು ಪಡೆಯಿರಿ", notifDesc: "ಪಾವತಿ ದೃಢೀಕರಣ, ಹೊಸ ಬಿಲ್‌ಗಳು ಮತ್ತು ನವೀಕರಣಗಳಿಗೆ ಎಚ್ಚರಿಕೆಗಳನ್ನು ಆನ್ ಮಾಡಿ.",
+    notifEnable: "ಅಧಿಸೂಚನೆಗಳನ್ನು ಆನ್ ಮಾಡಿ", notifOn: "ಅಧಿಸೂಚನೆಗಳು ಆನ್ ಆಗಿವೆ", notifWorking: "ಆನ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
+    notifInstall: "iPhone ನಲ್ಲಿ ಎಚ್ಚರಿಕೆಗಳಿಗೆ: ಶೇರ್ ಐಕಾನ್ ಒತ್ತಿ, 'Add to Home Screen' ಆಯ್ಕೆಮಾಡಿ, ನಂತರ ಹೋಮ್ ಸ್ಕ್ರೀನ್‌ನಿಂದ ಆಪ್ ತೆರೆದು ಇಲ್ಲಿ ಆನ್ ಮಾಡಿ.",
+    notifBlocked: "ಅಧಿಸೂಚನೆಗಳನ್ನು ನಿರ್ಬಂಧಿಸಲಾಗಿದೆ. ಬ್ರೌಸರ್ ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ ಆನ್ ಮಾಡಿ.",
     dueBy: "ಕಟ್ಟಕಡೆಯ ದಿನಾಂಕ", paidOn: "ಪಾವತಿ ದಿನಾಂಕ",
     totalDue: "ಒಟ್ಟು ಮೊತ್ತ", rent: "ಬಾಡಿಗೆ", water: "ನೀರು", electricity: "ವಿದ್ಯುತ್",
     chooseApp: "ಪಾವತಿಸಿ",
@@ -360,6 +381,51 @@ function LangSelect({ onSelect }) {
   )
 }
 
+// ── NOTIFICATION CARD ────────────────────────────────────────────────────────────
+function NotificationCard({ tenant, lt }) {
+  const [state, setState] = useState(null) // null while detecting
+  const [working, setWorking] = useState(false)
+
+  useEffect(() => { getPushState().then(setState) }, [])
+
+  if (state === null || state === "unsupported" || state === "subscribed") return null
+
+  const enable = async () => {
+    setWorking(true)
+    const res = await enablePush(tenant.id)
+    setWorking(false)
+    setState(res.ok ? "subscribed" : await getPushState())
+  }
+
+  let body, action = null
+  if (state === "needs-install") {
+    body = lt.notifInstall
+  } else if (state === "denied") {
+    body = lt.notifBlocked
+  } else {
+    body = lt.notifDesc
+    action = (
+      <button onClick={enable} disabled={working}
+        style={{ marginTop: 12, padding: "10px 16px", background: C.accent, border: "none", borderRadius: 12, cursor: working ? "default" : "pointer", fontWeight: 700, color: "#fff", fontSize: 13, fontFamily: "inherit" }}>
+        {working ? lt.notifWorking : lt.notifEnable}
+      </button>
+    )
+  }
+
+  return (
+    <div style={{ background: C.accentSoft, border: `0.5px solid ${C.accentBorder}`, borderRadius: 14, padding: 16, marginBottom: 12 }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="1.6" style={{ flexShrink: 0, marginTop: 1 }}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 14, color: C.accent }}>{lt.notifTitle}</div>
+          <div style={{ fontSize: 13, color: C.sub, lineHeight: 1.6, marginTop: 3 }}>{body}</div>
+          {action}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── HOME TAB ────────────────────────────────────────────────────────────────────
 function HomeTab({ tenant, unit, payments, lt, setActiveTab, setPayments }) {
   const now = new Date()
@@ -384,6 +450,8 @@ function HomeTab({ tenant, unit, payments, lt, setActiveTab, setPayments }) {
           ))}
         </div>
       </Card>
+
+      <NotificationCard tenant={tenant} lt={lt} />
 
       {/* Verifying */}
       {verifying.map(p => (

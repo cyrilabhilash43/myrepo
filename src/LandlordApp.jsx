@@ -13,6 +13,16 @@ function isOverdue(month, year) {
   return new Date() > new Date(year, month, 10)
 }
 
+// Fire-and-forget push notification to a tenant via the serverless sender.
+function notifyTenant(tenant_id, title, body, url = "/") {
+  if (!tenant_id) return
+  fetch("/api/notify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tenant_id, title, body, url }),
+  }).catch(() => {})
+}
+
 const LangCtx = createContext(null)
 const useLT = () => useContext(LangCtx) || LT.en
 
@@ -277,6 +287,7 @@ function HomeTab({ units, tenants, activeNotices, payments, onSelectTenant, setT
       await supabase.from("tenants").update({ payment_status: "Paid" }).eq("id", tenant.id)
       setTenants(ts => ts.map(t => t.id === tenant.id ? { ...t, payment_status: "Paid" } : t))
     }
+    notifyTenant(payment.tenant_id, "Payment confirmed", `Your ${MONTHS[payment.month - 1]} ${payment.year} payment of ${fmt(payment.total_due || payment.amount)} is confirmed. Thank you!`)
   }
 
   const disputePayment = async (payment) => {
@@ -289,6 +300,7 @@ function HomeTab({ units, tenants, activeNotices, payments, onSelectTenant, setT
       await supabase.from("payment_records").update({ verification_status: "Disputed" }).eq("id", payment.id)
     }
     setPayments(ps => ps.map(p => p.id === payment.id ? { ...p, verification_status: "Disputed", dispute_reason: trimmed } : p))
+    notifyTenant(payment.tenant_id, "Payment needs attention", trimmed ? `Your ${MONTHS[payment.month - 1]} payment could not be confirmed: ${trimmed}` : `Your ${MONTHS[payment.month - 1]} payment could not be confirmed. Please review and pay again.`, "/")
   }
 
   return (
