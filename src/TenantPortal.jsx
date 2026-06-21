@@ -42,6 +42,12 @@ const LANGS = {
     notifEnable: "Enable notifications", notifOn: "Notifications are on", notifWorking: "Turning on...",
     notifInstall: "To get alerts on iPhone: tap the Share icon, choose 'Add to Home Screen', then open the app from your home screen and enable here.",
     notifBlocked: "Notifications are blocked. Turn them on in your browser settings.",
+    onboard: { welcome: "Welcome", subtitle: "Here is everything you can do here:", cta: "Get started",
+      steps: [
+        { t: "Pay rent easily", d: "Pay with any UPI app in seconds, right from your phone." },
+        { t: "Stay in the loop", d: "Track payment status, get alerts, and save receipts." },
+        { t: "Docs and issues", d: "Upload your documents and report maintenance anytime." },
+      ] },
     dueBy: "Due by", paidOn: "Paid on",
     totalDue: "Total due", rent: "Rent", water: "Water", electricity: "Electricity",
     chooseApp: "Pay using",
@@ -101,6 +107,12 @@ const LANGS = {
     notifEnable: "सूचनाएं चालू करें", notifOn: "सूचनाएं चालू हैं", notifWorking: "चालू हो रहा है...",
     notifInstall: "iPhone पर अलर्ट के लिए: शेयर आइकन दबाएं, 'Add to Home Screen' चुनें, फिर होम स्क्रीन से ऐप खोलें और यहां चालू करें।",
     notifBlocked: "सूचनाएं अवरुद्ध हैं। उन्हें ब्राउज़र सेटिंग्स में चालू करें।",
+    onboard: { welcome: "स्वागत है", subtitle: "यहां आप यह सब कर सकते हैं:", cta: "शुरू करें",
+      steps: [
+        { t: "आसानी से किराया भरें", d: "किसी भी UPI ऐप से कुछ ही सेकंड में फोन से भुगतान करें।" },
+        { t: "अपडेट रहें", d: "भुगतान स्थिति देखें, अलर्ट पाएं और रसीद सहेजें।" },
+        { t: "दस्तावेज़ और शिकायतें", d: "अपने दस्तावेज़ अपलोड करें और कभी भी समस्या बताएं।" },
+      ] },
     dueBy: "देय तिथि", paidOn: "भुगतान तिथि",
     totalDue: "कुल देय", rent: "किराया", water: "पानी", electricity: "बिजली",
     chooseApp: "भुगतान करें",
@@ -160,6 +172,12 @@ const LANGS = {
     notifEnable: "அறிவிப்புகளை இயக்கு", notifOn: "அறிவிப்புகள் இயக்கப்பட்டுள்ளன", notifWorking: "இயக்குகிறது...",
     notifInstall: "iPhone இல் விழிப்பூட்டல்களுக்கு: Share ஐகானை அழுத்தி, 'Add to Home Screen' தேர்வுசெய்து, பின்னர் ஹோம் ஸ்கிரீனில் இருந்து ஆப்பைத் திறந்து இங்கே இயக்கவும்.",
     notifBlocked: "அறிவிப்புகள் தடுக்கப்பட்டுள்ளன. உலாவி அமைப்புகளில் இயக்கவும்.",
+    onboard: { welcome: "வரவேற்கிறோம்", subtitle: "இங்கே நீங்கள் செய்யக்கூடியவை:", cta: "தொடங்குங்கள்",
+      steps: [
+        { t: "எளிதாக வாடகை செலுத்துங்கள்", d: "எந்த UPI ஆப்பிலும் சில வினாடிகளில் போனில் இருந்து செலுத்துங்கள்." },
+        { t: "புதுப்பிப்புகளை அறியுங்கள்", d: "கட்டண நிலையைப் பாருங்கள், விழிப்பூட்டல் பெறுங்கள், ரசீதுகளைச் சேமியுங்கள்." },
+        { t: "ஆவணங்கள் மற்றும் சிக்கல்கள்", d: "உங்கள் ஆவணங்களைப் பதிவேற்றி எப்போது வேண்டுமானாலும் சிக்கலைத் தெரிவியுங்கள்." },
+      ] },
     dueBy: "கடைசி தேதி", paidOn: "செலுத்திய தேதி",
     totalDue: "மொத்த தொகை", rent: "வாடகை", water: "தண்ணீர்", electricity: "மின்சாரம்",
     chooseApp: "செலுத்தவும்",
@@ -218,6 +236,12 @@ const LANGS = {
     notifEnable: "నోటిఫికేషన్లు ఆన్ చేయి", notifOn: "నోటిఫికేషన్లు ఆన్‌లో ఉన్నాయి", notifWorking: "ఆన్ చేస్తోంది...",
     notifInstall: "iPhoneలో హెచ్చరికల కోసం: షేర్ చిహ్నాన్ని నొక్కి, 'Add to Home Screen' ఎంచుకుని, ఆపై హోమ్ స్క్రీన్ నుండి యాప్ తెరిచి ఇక్కడ ఆన్ చేయండి.",
     notifBlocked: "నోటిఫికేషన్లు బ్లాక్ చేయబడ్డాయి. బ్రౌజర్ సెట్టింగ్‌లలో ఆన్ చేయండి.",
+    onboard: { welcome: "స్వాగతం", subtitle: "ఇక్కడ మీరు చేయగలిగేవి:", cta: "ప్రారంభించండి",
+      steps: [
+        { t: "సులభంగా అద్దె చెల్లించండి", d: "ఏ UPI యాప్‌తోనైనా క్షణాల్లో ఫోన్ నుండి చెల్లించండి." },
+        { t: "అప్‌డేట్‌గా ఉండండి", d: "చెల్లింపు స్థితి చూడండి, హెచ్చరికలు పొందండి, రసీదులు సేవ్ చేయండి." },
+        { t: "పత్రాలు, సమస్యలు", d: "మీ పత్రాలను అప్‌లోడ్ చేయండి, ఎప్పుడైనా సమస్యను నివేదించండి." },
+      ] },
     dueBy: "చివరి తేదీ", paidOn: "చెల్లింపు తేదీ",
     totalDue: "మొత్తం", rent: "అద్దె", water: "నీరు", electricity: "విద్యుత్",
     chooseApp: "చెల్లించండి",
@@ -276,6 +300,12 @@ const LANGS = {
     notifEnable: "ಅಧಿಸೂಚನೆಗಳನ್ನು ಆನ್ ಮಾಡಿ", notifOn: "ಅಧಿಸೂಚನೆಗಳು ಆನ್ ಆಗಿವೆ", notifWorking: "ಆನ್ ಮಾಡಲಾಗುತ್ತಿದೆ...",
     notifInstall: "iPhone ನಲ್ಲಿ ಎಚ್ಚರಿಕೆಗಳಿಗೆ: ಶೇರ್ ಐಕಾನ್ ಒತ್ತಿ, 'Add to Home Screen' ಆಯ್ಕೆಮಾಡಿ, ನಂತರ ಹೋಮ್ ಸ್ಕ್ರೀನ್‌ನಿಂದ ಆಪ್ ತೆರೆದು ಇಲ್ಲಿ ಆನ್ ಮಾಡಿ.",
     notifBlocked: "ಅಧಿಸೂಚನೆಗಳನ್ನು ನಿರ್ಬಂಧಿಸಲಾಗಿದೆ. ಬ್ರೌಸರ್ ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ ಆನ್ ಮಾಡಿ.",
+    onboard: { welcome: "ಸ್ವಾಗತ", subtitle: "ಇಲ್ಲಿ ನೀವು ಮಾಡಬಹುದಾದವು:", cta: "ಪ್ರಾರಂಭಿಸಿ",
+      steps: [
+        { t: "ಸುಲಭವಾಗಿ ಬಾಡಿಗೆ ಪಾವತಿಸಿ", d: "ಯಾವುದೇ UPI ಆಪ್‌ನಿಂದ ಕ್ಷಣಗಳಲ್ಲಿ ಫೋನ್‌ನಿಂದ ಪಾವತಿಸಿ." },
+        { t: "ಮಾಹಿತಿ ಪಡೆಯಿರಿ", d: "ಪಾವತಿ ಸ್ಥಿತಿ ನೋಡಿ, ಎಚ್ಚರಿಕೆ ಪಡೆಯಿರಿ, ರಸೀದಿ ಉಳಿಸಿ." },
+        { t: "ದಾಖಲೆಗಳು ಮತ್ತು ಸಮಸ್ಯೆಗಳು", d: "ನಿಮ್ಮ ದಾಖಲೆಗಳನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ, ಯಾವಾಗ ಬೇಕಾದರೂ ಸಮಸ್ಯೆ ತಿಳಿಸಿ." },
+      ] },
     dueBy: "ಕಟ್ಟಕಡೆಯ ದಿನಾಂಕ", paidOn: "ಪಾವತಿ ದಿನಾಂಕ",
     totalDue: "ಒಟ್ಟು ಮೊತ್ತ", rent: "ಬಾಡಿಗೆ", water: "ನೀರು", electricity: "ವಿದ್ಯುತ್",
     chooseApp: "ಪಾವತಿಸಿ",
@@ -423,6 +453,37 @@ function NotificationCard({ tenant, lt }) {
           <div style={{ fontSize: 13, color: C.sub, lineHeight: 1.6, marginTop: 3 }}>{body}</div>
           {action}
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ── ONBOARDING ───────────────────────────────────────────────────────────────────
+function OnboardingOverlay({ tenant, lt, onDone }) {
+  const ob = lt.onboard
+  const icons = [
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>,
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>,
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>,
+  ]
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(26,26,46,0.5)", zIndex: 1000, display: "flex", alignItems: "flex-end", fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ background: C.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: "28px 22px calc(env(safe-area-inset-bottom, 0px) + 24px)", width: "100%", maxWidth: 500, margin: "0 auto", boxShadow: "0 -8px 40px rgba(0,0,0,0.2)" }}>
+        <div style={{ fontSize: 22, fontWeight: 800, color: C.text, letterSpacing: "-0.4px" }}>{ob.welcome}, {tenant.name.split(" ")[0]}</div>
+        <div style={{ fontSize: 14, color: C.muted, marginTop: 4, marginBottom: 20 }}>{ob.subtitle}</div>
+        {ob.steps.map((s, i) => (
+          <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 16 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: C.accentSoft, border: `0.5px solid ${C.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.accent, flexShrink: 0 }}>{icons[i]}</div>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{s.t}</div>
+              <div style={{ fontSize: 13, color: C.sub, lineHeight: 1.5, marginTop: 2 }}>{s.d}</div>
+            </div>
+          </div>
+        ))}
+        <button onClick={onDone}
+          style={{ width: "100%", marginTop: 10, padding: "15px", background: C.accent, border: "none", borderRadius: 14, cursor: "pointer", fontWeight: 700, color: "#fff", fontSize: 15, fontFamily: "inherit" }}>
+          {ob.cta}
+        </button>
       </div>
     </div>
   )
@@ -1042,6 +1103,7 @@ export default function TenantPortal({ token }) {
   const [notFound, setNotFound] = useState(false)
   const [activeTab, setActiveTab] = useState("home")
   const [lang, setLang] = useState(null)
+  const [onboarded, setOnboarded] = useState(() => localStorage.getItem("pm_onboarded") === "1")
 
   useEffect(() => {
     const saved = localStorage.getItem("pm_lang")
@@ -1109,6 +1171,9 @@ export default function TenantPortal({ token }) {
 
   return (
     <div style={{ minHeight: "100vh", minHeight: "100dvh", background: C.bg, fontFamily: "'DM Sans', 'Segoe UI', sans-serif", paddingBottom: "calc(88px + env(safe-area-inset-bottom, 0px))", overscrollBehavior: "none" }}>
+      {!onboarded && tenant && (
+        <OnboardingOverlay tenant={tenant} lt={lt} onDone={() => { localStorage.setItem("pm_onboarded", "1"); setOnboarded(true) }} />
+      )}
       {/* Header */}
       <div style={{ background: C.surface, borderBottom: `0.5px solid ${C.border}`, paddingTop: "env(safe-area-inset-top, 18px)", padding: "env(safe-area-inset-top, 18px) 18px 14px", position: "sticky", top: 0, zIndex: 100 }}>
         <div style={{ maxWidth: 500, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
