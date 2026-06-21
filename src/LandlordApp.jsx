@@ -3,6 +3,7 @@ import { supabase } from "./supabase"
 import { toast } from "./toast"
 
 const fmt = (n) => "₹" + Number(n).toLocaleString("en-IN")
+const fmtDate = (d) => { if (!d) return ""; const x = new Date(d); return isNaN(x) ? d : x.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) }
 const nowStr = () => new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"]
@@ -219,7 +220,7 @@ const LT = {
 // ── SHARED UI ──────────────────────────────────────────────────────────────────
 function Pill({ label, color, bg, border }) {
   return (
-    <span style={{ background: bg, color, border: `0.5px solid ${border || color + "40"}`, padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>
+    <span style={{ background: bg, color, border: `0.5px solid ${border || color + "40"}`, padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", alignSelf: "flex-start", lineHeight: 1.5 }}>
       {label}
     </span>
   )
@@ -1727,10 +1728,10 @@ function MaintenanceTab() {
           const border = r.status === "Open" ? C.redBorder : r.status === "In Progress" ? C.amberBorder : C.greenBorder
           return (
             <Card key={r.id} style={{ marginBottom: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 14, color: C.text }}>{r.tenant_name}</div>
-                  <div style={{ fontSize: 12, color: C.muted }}>{r.unit_name} · {r.submitted_at}</div>
+                  <div style={{ fontSize: 12, color: C.muted }}>{r.unit_name} · {fmtDate(r.submitted_at)}</div>
                 </div>
                 <Pill label={r.status} color={color} bg={bg} border={border} />
               </div>

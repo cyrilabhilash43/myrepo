@@ -360,7 +360,7 @@ function greeting(lt) {
 }
 
 function Pill({ label, color, bg, border }) {
-  return <span style={{ background: bg, color, border: `0.5px solid ${border || color + "40"}`, padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>{label}</span>
+  return <span style={{ background: bg, color, border: `0.5px solid ${border || color + "40"}`, padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", alignSelf: "flex-start", lineHeight: 1.5 }}>{label}</span>
 }
 
 function Card({ children, style = {}, accent }) {
