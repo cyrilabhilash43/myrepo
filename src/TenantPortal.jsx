@@ -534,6 +534,40 @@ function PaymentsTab({ tenant, unit, payments, setPayments, lt }) {
     { name: "Paytm", color: "#00b9f1", icon: "₹" },
   ]
 
+  const receipt = (p) => {
+    const rows = [["Rent", p.amount]]
+    if (p.water_bill > 0) rows.push(["Water", p.water_bill])
+    if (p.electricity_bill > 0) rows.push(["Electricity", p.electricity_bill])
+    const total = p.total_due || p.amount
+    const rcptNo = `RCPT-${String(p.id).padStart(5, "0")}`
+    const lines = rows.map(([l, v]) => `<tr><td style="padding:8px 0;color:#4a4a6a">${l}</td><td style="padding:8px 0;text-align:right;font-weight:600">₹${Number(v).toLocaleString("en-IN")}</td></tr>`).join("")
+    const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${rcptNo}</title></head>
+<body style="font-family:-apple-system,system-ui,Segoe UI,Roboto,sans-serif;color:#1a1a2e;margin:0;padding:28px;background:#fff">
+<div style="max-width:440px;margin:0 auto">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #ede9fe;padding-bottom:16px;margin-bottom:18px">
+    <div><div style="font-size:20px;font-weight:800;color:#5046e5">Property Manager</div><div style="font-size:13px;color:#9090a8;margin-top:2px">Payment Receipt</div></div>
+    <div style="background:#d1fae5;color:#065f46;font-weight:700;font-size:12px;padding:6px 12px;border-radius:20px">PAID</div>
+  </div>
+  <table style="width:100%;font-size:14px;margin-bottom:6px">
+    <tr><td style="padding:4px 0;color:#9090a8">Receipt no.</td><td style="padding:4px 0;text-align:right;font-weight:600">${rcptNo}</td></tr>
+    <tr><td style="padding:4px 0;color:#9090a8">Tenant</td><td style="padding:4px 0;text-align:right;font-weight:600">${tenant.name}</td></tr>
+    <tr><td style="padding:4px 0;color:#9090a8">Unit</td><td style="padding:4px 0;text-align:right;font-weight:600">${unit.name}</td></tr>
+    <tr><td style="padding:4px 0;color:#9090a8">Period</td><td style="padding:4px 0;text-align:right;font-weight:600">${MONTH_NAMES[p.month - 1]} ${p.year}</td></tr>
+    <tr><td style="padding:4px 0;color:#9090a8">Paid on</td><td style="padding:4px 0;text-align:right;font-weight:600">${p.paid_on || "-"}</td></tr>
+  </table>
+  <div style="border-top:1px solid #e8e8f0;margin:14px 0"></div>
+  <table style="width:100%;font-size:14px">${lines}
+    <tr><td style="padding:12px 0 0;font-weight:800;font-size:16px;border-top:2px solid #1a1a2e">Total paid</td><td style="padding:12px 0 0;text-align:right;font-weight:800;font-size:16px;border-top:2px solid #1a1a2e;color:#5046e5">₹${Number(total).toLocaleString("en-IN")}</td></tr>
+  </table>
+  <div style="font-size:12px;color:#9090a8;margin-top:24px;line-height:1.6">This is a computer-generated receipt confirmed by your landlord. Thank you for your payment.</div>
+</div>
+<script>window.onload=function(){setTimeout(function(){window.print()},350)}</script>
+</body></html>`
+    const w = window.open("", "_blank")
+    if (!w) { toast("Allow pop-ups to save the receipt", "error"); return }
+    w.document.write(html); w.document.close()
+  }
+
   const markPaid = async (payment) => {
     await supabase.from("payment_records").update({ verification_status: "Pending Verification", claimed_at: new Date().toISOString() }).eq("id", payment.id)
     setPayments(ps => ps.map(p => p.id === payment.id ? { ...p, verification_status: "Pending Verification" } : p))
@@ -600,6 +634,13 @@ function PaymentsTab({ tenant, unit, payments, setPayments, lt }) {
                   <button onClick={() => { setPaying(p); setPayStep(0); setChosenApp(null) }}
                     style={{ padding: "9px 16px", background: C.accent, border: "none", borderRadius: 10, cursor: "pointer", fontWeight: 700, color: "#fff", fontSize: 13, fontFamily: "inherit" }}>
                     {lt.payNow}
+                  </button>
+                )}
+                {p.status === "Paid" && (
+                  <button onClick={() => receipt(p)}
+                    style={{ padding: "9px 14px", background: C.surface, border: `0.5px solid ${C.border}`, borderRadius: 10, cursor: "pointer", fontWeight: 600, color: C.accent, fontSize: 13, fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    {lt.receipt || "Receipt"}
                   </button>
                 )}
               </div>
