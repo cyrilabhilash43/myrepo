@@ -1005,6 +1005,13 @@ export default function TenantPortal({ token }) {
 
   useEffect(() => {
     if (!token) { setNotFound(true); setLoading(false); return }
+    // Remember this tenant so the installed PWA (which launches at "/") routes
+    // back here instead of the landlord login, and point the install manifest
+    // at this tenant's portal.
+    localStorage.setItem("pm_tenant_token", token)
+    const mlink = document.querySelector('link[rel="manifest"]')
+    if (mlink) mlink.setAttribute("href", `/api/manifest?token=${token}`)
+
     supabase.from("tenants").select("*").eq("portal_token", token).maybeSingle().then(async ({ data: t }) => {
       if (!t) { setNotFound(true); setLoading(false); return }
       setTenant(t)

@@ -148,9 +148,19 @@ export default function App() {
       setApplyUnitName(path.replace("/apply/", ""))
       setView("apply")
     } else {
-      setView("landlord")
-      const stored = localStorage.getItem("landlord_user")
-      if (stored) { try { setLandlordUser(JSON.parse(stored)) } catch { localStorage.removeItem("landlord_user") } }
+      // Installed tenant PWAs launch at "/" (manifest start_url). If this device
+      // belongs to a tenant (saved token, no landlord login), send them to their
+      // portal instead of the landlord login.
+      const savedTenant = localStorage.getItem("pm_tenant_token")
+      const landlordStored = localStorage.getItem("landlord_user")
+      const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true
+      if (standalone && savedTenant && !landlordStored) {
+        setTenantToken(savedTenant)
+        setView("tenant")
+      } else {
+        setView("landlord")
+        if (landlordStored) { try { setLandlordUser(JSON.parse(landlordStored)) } catch { localStorage.removeItem("landlord_user") } }
+      }
     }
     setAuthChecked(true)
   }, [])
