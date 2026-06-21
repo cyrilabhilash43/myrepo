@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react"
 import { supabase } from "./supabase"
 
-const NTFY_TOPIC = "building-cyril-a59e9c4aeb" // landlord gets a push on new leads
-
 const C = {
   bg: "#f0efe9", surface: "#ffffff", border: "#e4e3dc",
   accent: "#3820c0", accentSoft: "#ece8fc", accentBorder: "#a8a0e0",
@@ -44,7 +42,7 @@ function Chips({ options, value, onChange }) {
 }
 
 function notifyLandlord(text) {
-  fetch(`https://ntfy.sh/${NTFY_TOPIC}`, { method: "POST", body: text, headers: { Title: "New rental lead" } }).catch(() => {})
+  fetch("/api/notify-landlord", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) }).catch(() => {})
 }
 
 function Header() {

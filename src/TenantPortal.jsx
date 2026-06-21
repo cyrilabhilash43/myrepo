@@ -8,10 +8,8 @@ const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"]
 const UPI_ID = "kavitha1713-2@okaxis"
 const UPI_NAME = "Kavitha"
-const NTFY_TOPIC = "building-cyril-a59e9c4aeb"
-
 function notifyLandlord(text) {
-  fetch(`https://ntfy.sh/${NTFY_TOPIC}`, { method: "POST", body: text, headers: { Title: "Building update" } }).catch(() => {})
+  fetch("/api/notify-landlord", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) }).catch(() => {})
 }
 
 function isOverdue(month, year) {
