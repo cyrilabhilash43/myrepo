@@ -60,6 +60,19 @@ cd /Users/cyrilsmacbookair/building-app && vercel build --prod && vercel --prod 
   agreements (missing feature).
 - Confirm the `units.slice(0,3)` -> `units.map` fix in `LandlordApp.jsx` is actually deployed.
 
+## Security posture (reviewed 2026-06-21)
+- **Closed:** landlord PIN hash no longer readable by the public key (`verify_landlord_pin`
+  is SECURITY DEFINER; column-level grant on `landlord_users`). DELETE revoked from `anon`
+  on all core tables. ntfy topic moved server-side (`/api/notify-landlord`).
+- **Mitigated:** Aadhaar/PAN documents - data minimization (landlord can delete ID docs
+  after verifying; applicant docs auto-deleted on approve/reject). Bucket itself is still
+  open to the publishable key.
+- **KNOWN, DEFERRED (needs auth rebuild):** the publishable key still grants read + write/update
+  to all tables (tenant tokens, PII readable; data can be tampered/inserted). Root cause: the
+  landlord app + public pages share the anon key, so RLS can't distinguish them without real
+  landlord authentication. Full fix = Supabase Auth for landlords + token-scoped RPCs for
+  tenants + lock all tables. `SUPABASE_SERVICE_ROLE` is already set in Vercel for when this is done.
+
 ## How to work with Cyril
 - Casual but focused. Tight responses, no fluff.
 - Diagnose the issue before proposing a solution.
