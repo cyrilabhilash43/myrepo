@@ -33,7 +33,7 @@ export async function getPushState() {
   return "available"
 }
 
-export async function enablePush(tenantId) {
+export async function enablePush(token) {
   const reg = await navigator.serviceWorker.register("/sw.js")
   await navigator.serviceWorker.ready
   const permission = await Notification.requestPermission()
@@ -47,9 +47,7 @@ export async function enablePush(tenantId) {
     })
   }
   const json = sub.toJSON()
-  const { error } = await supabase
-    .from("push_subscriptions")
-    .upsert({ tenant_id: tenantId, endpoint: json.endpoint, subscription: json }, { onConflict: "endpoint" })
+  const { error } = await supabase.rpc("tenant_save_push", { p_token: token, p_endpoint: json.endpoint, p_sub: json })
   if (error) return { ok: false, reason: error.message }
   return { ok: true }
 }

@@ -4,6 +4,7 @@ import { getPushState, enablePush } from "./push"
 import { toast } from "./toast"
 
 const fmt = (n) => "₹" + Number(n).toLocaleString("en-IN")
+const fmtDate = (d) => { if (!d) return ""; const x = new Date(d); return isNaN(x) ? d : x.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) }
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"]
 const UPI_ID = "kavitha1713-2@okaxis"
@@ -416,7 +417,7 @@ function LangSelect({ onSelect }) {
 }
 
 // ── NOTIFICATION CARD ────────────────────────────────────────────────────────────
-function NotificationCard({ tenant, lt }) {
+function NotificationCard({ tenant, lt, token }) {
   const [state, setState] = useState(null) // null while detecting
   const [working, setWorking] = useState(false)
 
@@ -426,7 +427,7 @@ function NotificationCard({ tenant, lt }) {
 
   const enable = async () => {
     setWorking(true)
-    const res = await enablePush(tenant.id)
+    const res = await enablePush(token)
     setWorking(false)
     setState(res.ok ? "subscribed" : await getPushState())
     toast(res.ok ? "Notifications on" : "Could not enable notifications", res.ok ? "success" : "error")
@@ -493,7 +494,7 @@ function OnboardingOverlay({ tenant, lt, onDone }) {
 }
 
 // ── HOME TAB ────────────────────────────────────────────────────────────────────
-function HomeTab({ tenant, unit, payments, lt, setActiveTab, setPayments }) {
+function HomeTab({ tenant, unit, payments, lt, setActiveTab, setPayments, token }) {
   const now = new Date()
   const unpaid = payments.filter(p => p.status === "Unpaid" && p.verification_status !== "Pending Verification")
   const overdue = unpaid.filter(p => isOverdue(p.month, p.year))
@@ -517,7 +518,7 @@ function HomeTab({ tenant, unit, payments, lt, setActiveTab, setPayments }) {
         </div>
       </Card>
 
-      <NotificationCard tenant={tenant} lt={lt} />
+      <NotificationCard tenant={tenant} lt={lt} token={token} />
 
       {/* Verifying */}
       {verifying.map(p => (
@@ -587,7 +588,7 @@ function HomeTab({ tenant, unit, payments, lt, setActiveTab, setPayments }) {
 }
 
 // ── PAYMENTS TAB ──────────────────────────────────────────────────────────────
-function PaymentsTab({ tenant, unit, payments, setPayments, lt }) {
+function PaymentsTab({ tenant, unit, payments, setPayments, lt, token }) {
   const [paying, setPaying] = useState(null)
   const [payStep, setPayStep] = useState(0)
   const [chosenApp, setChosenApp] = useState(null)
@@ -633,7 +634,7 @@ function PaymentsTab({ tenant, unit, payments, setPayments, lt }) {
   }
 
   const markPaid = async (payment) => {
-    await supabase.from("payment_records").update({ verification_status: "Pending Verification", claimed_at: new Date().toISOString() }).eq("id", payment.id)
+    await supabase.rpc("tenant_mark_paid", { p_token: token, p_payment_id: payment.id })
     setPayments(ps => ps.map(p => p.id === payment.id ? { ...p, verification_status: "Pending Verification" } : p))
     setPaying(null); setPayStep(0); setChosenApp(null)
     toast("Marked as paid, awaiting confirmation")
@@ -787,7 +788,7 @@ function PaymentsTab({ tenant, unit, payments, setPayments, lt }) {
 }
 
 // ── DOCUMENTS TAB ─────────────────────────────────────────────────────────────
-function DocumentsTab({ tenant, unit, lt }) {
+function DocumentsTab({ tenant, unit, lt, token }) {
   const [uploading, setUploading] = useState({})
   const [uploaded, setUploaded] = useState({})
   const [agreement, setAgreement] = useState(null)
@@ -822,7 +823,7 @@ function DocumentsTab({ tenant, unit, lt }) {
       const { data: u } = await supabase.storage.from("documents").createSignedUrl(data.path, 3600)
       setUploaded(p => ({ ...p, [docType]: { name: file.name, url: u?.signedUrl } }))
       if (docType === "aadhaar" || docType === "pan") {
-        await supabase.from("tenants").update({ agreement_status: "Documents Submitted" }).eq("id", tenant.id)
+        await supabase.rpc("tenant_mark_docs_submitted", { p_token: token })
       }
     }
     setUploading(p => ({ ...p, [docType]: false }))
@@ -882,17 +883,13 @@ function DocumentsTab({ tenant, unit, lt }) {
 }
 
 // ── ISSUES TAB ────────────────────────────────────────────────────────────────
-function IssuesTab({ tenant, unit, lt }) {
-  const [issues, setIssues] = useState([])
+function IssuesTab({ tenant, unit, lt, token, issues, setIssues }) {
   const [desc, setDesc] = useState("")
   const [photo, setPhoto] = useState(null)
   const [photoPreview, setPhotoPreview] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
-
-  useEffect(() => {
-    supabase.from("maintenance_requests").select("*").eq("tenant_id", tenant.id).order("id", { ascending: false }).then(({ data }) => { if (data) setIssues(data) })
-  }, [tenant.id])
+  const sortedIssues = (issues || []).slice().sort((a, b) => b.id - a.id)
 
   const handlePhoto = (e) => {
     const file = e.target.files[0]
@@ -913,12 +910,8 @@ function IssuesTab({ tenant, unit, lt }) {
         photoUrl = u?.signedUrl
       }
     }
-    const { data } = await supabase.from("maintenance_requests").insert([{
-      tenant_id: tenant.id, unit_id: unit.id, tenant_name: tenant.name, unit_name: unit.name,
-      description: desc, photo_url: photoUrl, status: "Open",
-      submitted_at: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
-    }]).select().single()
-    if (data) { setIssues(p => [data, ...p]); setDesc(""); setPhoto(null); setPhotoPreview(null); setSubmitted(true); setTimeout(() => setSubmitted(false), 3000); toast("Issue reported") }
+    const { data } = await supabase.rpc("tenant_report_issue", { p_token: token, p_description: desc, p_photo_url: photoUrl })
+    if (data) { setIssues(p => [data, ...(p || [])]); setDesc(""); setPhoto(null); setPhotoPreview(null); setSubmitted(true); setTimeout(() => setSubmitted(false), 3000); toast("Issue reported") }
     setSubmitting(false)
   }
 
@@ -956,17 +949,17 @@ function IssuesTab({ tenant, unit, lt }) {
         </button>
       </Card>
 
-      {issues.length > 0 && (
+      {sortedIssues.length > 0 && (
         <div>
           <div style={{ fontSize: 11, fontWeight: 600, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>{lt.previousIssues}</div>
-          {issues.map(r => {
+          {sortedIssues.map(r => {
             const color = r.status === "Open" ? C.red : r.status === "In Progress" ? C.amber : C.green
             const bg = r.status === "Open" ? C.redSoft : r.status === "In Progress" ? C.amberSoft : C.greenSoft
             const border = r.status === "Open" ? C.redBorder : r.status === "In Progress" ? C.amberBorder : C.greenBorder
             return (
               <Card key={r.id} style={{ marginBottom: 10 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                  <div style={{ fontSize: 12, color: C.muted }}>{r.submitted_at}</div>
+                  <div style={{ fontSize: 12, color: C.muted }}>{fmtDate(r.submitted_at)}</div>
                   <Pill label={r.status === "In Progress" ? lt.inProgress : r.status === "Resolved" ? lt.resolved : lt.open} color={color} bg={bg} border={border} />
                 </div>
                 <p style={{ fontSize: 14, color: C.sub, margin: 0, lineHeight: 1.7 }}>{r.description}</p>
@@ -977,7 +970,7 @@ function IssuesTab({ tenant, unit, lt }) {
         </div>
       )}
 
-      {issues.length === 0 && !submitted && (
+      {sortedIssues.length === 0 && !submitted && (
         <div style={{ textAlign: "center", padding: "20px 0", color: C.muted, fontSize: 13 }}>{lt.noIssues}</div>
       )}
     </div>
@@ -985,39 +978,27 @@ function IssuesTab({ tenant, unit, lt }) {
 }
 
 // ── NOTICE TAB ────────────────────────────────────────────────────────────────
-function NoticeTab({ tenant, unit, lt, payments }) {
-  const [notice, setNotice] = useState(null)
-  const [loading, setLoading] = useState(true)
+function NoticeTab({ tenant, unit, lt, payments, token, notices }) {
+  const latestActive = (notices || []).slice().sort((a, b) => b.id - a.id).find(n => n.status !== "Cancelled")
+  const [notice, setNotice] = useState(latestActive || null)
   const [moveOutDate, setMoveOutDate] = useState("")
   const [submitting, setSubmitting] = useState(false)
 
   const outstanding = payments.filter(p => p.status === "Unpaid" && p.verification_status !== "Pending Verification").reduce((s, p) => s + Number(p.total_due || p.amount), 0)
 
-  useEffect(() => {
-    supabase.from("notices").select("*").eq("tenant_id", tenant.id).order("id", { ascending: false }).limit(1).then(({ data }) => {
-      if (data && data.length > 0 && data[0].status !== "Cancelled") setNotice(data[0])
-      setLoading(false)
-    })
-  }, [tenant.id])
-
   const submitNotice = async () => {
     if (!moveOutDate) return
     if (moveOutDate < new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]) { toast(lt.minNotice, "error"); return }
     setSubmitting(true)
-    const settlement = Number(tenant.advance_amount) - outstanding
-    const { data } = await supabase.from("notices").insert([{
-      tenant_id: tenant.id, unit_id: unit.id,
-      notice_date: new Date().toISOString().split("T")[0], move_out_date: moveOutDate,
-      advance_amount: tenant.advance_amount, outstanding_dues: outstanding,
-      settlement_amount: Math.abs(settlement), landlord_pays: settlement > 0, status: "Active",
-    }]).select().single()
-    if (data) { setNotice(data); toast("Notice submitted"); notifyLandlord(`${tenant.name} (Unit ${unit.name}) gave notice to vacate on ${moveOutDate}`) }
+    const { data, error } = await supabase.rpc("tenant_submit_notice", { p_token: token, p_move_out: moveOutDate })
+    if (!error && data) { setNotice(data); toast("Notice submitted"); notifyLandlord(`${tenant.name} (Unit ${unit.name}) gave notice to vacate on ${moveOutDate}`) }
+    else toast("Could not submit notice", "error")
     setSubmitting(false)
   }
 
   const cancelNotice = async () => {
     if (!window.confirm(lt.cancelNoticeSure)) return
-    await supabase.from("notices").update({ status: "Cancelled" }).eq("id", notice.id)
+    await supabase.rpc("tenant_cancel_notice", { p_token: token, p_notice_id: notice.id })
     setNotice(null)
     toast("Notice cancelled", "info")
   }
@@ -1025,8 +1006,6 @@ function NoticeTab({ tenant, unit, lt, payments }) {
   const minDate = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]
   const settlement = Number(tenant.advance_amount) - outstanding
   const landlordPays = settlement > 0
-
-  if (loading) return <div style={{ textAlign: "center", padding: 40, color: C.muted }}>Loading...</div>
 
   return (
     <div>
@@ -1104,6 +1083,8 @@ export default function TenantPortal({ token }) {
   const [tenant, setTenant] = useState(null)
   const [unit, setUnit] = useState(null)
   const [payments, setPayments] = useState([])
+  const [notices, setNotices] = useState([])
+  const [issues, setIssues] = useState([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [activeTab, setActiveTab] = useState("home")
@@ -1124,15 +1105,14 @@ export default function TenantPortal({ token }) {
     const mlink = document.querySelector('link[rel="manifest"]')
     if (mlink) mlink.setAttribute("href", `/api/manifest?token=${token}`)
 
-    supabase.from("tenants").select("*").eq("portal_token", token).maybeSingle().then(async ({ data: t }) => {
-      if (!t) { setNotFound(true); setLoading(false); return }
-      setTenant(t)
-      const [{ data: u }, { data: p }] = await Promise.all([
-        supabase.from("units").select("*").eq("id", t.unit_id).maybeSingle(),
-        supabase.from("payment_records").select("*").eq("tenant_id", t.id).order("year").order("month"),
-      ])
-      if (u) setUnit(u)
-      if (p) setPayments(p)
+    supabase.rpc("get_tenant_portal", { p_token: token }).then(({ data }) => {
+      if (!data || !data.tenant) { setNotFound(true); setLoading(false); return }
+      const sortP = (data.payments || []).slice().sort((a, b) => a.year !== b.year ? a.year - b.year : a.month - b.month)
+      setTenant(data.tenant)
+      setUnit(data.unit)
+      setPayments(sortP)
+      setNotices(data.notices || [])
+      setIssues(data.issues || [])
       setLoading(false)
     })
   }, [token])
@@ -1197,11 +1177,11 @@ export default function TenantPortal({ token }) {
       </div>
 
       <div style={{ maxWidth: 500, margin: "0 auto", padding: "18px 16px" }}>
-        {activeTab === "home" && <HomeTab tenant={tenant} unit={unit} payments={payments} lt={lt} setActiveTab={setActiveTab} setPayments={setPayments} />}
-        {activeTab === "payments" && <PaymentsTab tenant={tenant} unit={unit} payments={payments} setPayments={setPayments} lt={lt} />}
-        {activeTab === "documents" && <DocumentsTab tenant={tenant} unit={unit} lt={lt} />}
-        {activeTab === "issues" && <IssuesTab tenant={tenant} unit={unit} lt={lt} />}
-        {activeTab === "notice" && <NoticeTab tenant={tenant} unit={unit} lt={lt} payments={payments} />}
+        {activeTab === "home" && <HomeTab tenant={tenant} unit={unit} payments={payments} lt={lt} setActiveTab={setActiveTab} setPayments={setPayments} token={token} />}
+        {activeTab === "payments" && <PaymentsTab tenant={tenant} unit={unit} payments={payments} setPayments={setPayments} lt={lt} token={token} />}
+        {activeTab === "documents" && <DocumentsTab tenant={tenant} unit={unit} lt={lt} token={token} />}
+        {activeTab === "issues" && <IssuesTab tenant={tenant} unit={unit} lt={lt} token={token} issues={issues} setIssues={setIssues} />}
+        {activeTab === "notice" && <NoticeTab tenant={tenant} unit={unit} lt={lt} payments={payments} token={token} notices={notices} />}
       </div>
 
       {/* Bottom nav */}
