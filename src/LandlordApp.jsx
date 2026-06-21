@@ -273,6 +273,8 @@ function UnitPill(status, lt) {
 // ── HOME TAB ────────────────────────────────────────────────────────────────────
 function HomeTab({ units, tenants, activeNotices, payments, onSelectTenant, setTenants, setPayments, currentMonth, currentYear }) {
   const lt = useLT()
+  const [disputingId, setDisputingId] = useState(null)
+  const DISPUTE_REASONS = ["Amount doesn't match", "Not received yet", "Wrong month"]
   const overdueCount = tenants.filter(t => t.payment_status === "Overdue").length
   const billsMissing = !payments.some(p => p.month === currentMonth && p.year === currentYear && (p.water_bill > 0))
   const verifyingPayments = payments.filter(p => p.verification_status === "Pending Verification")
@@ -292,10 +294,8 @@ function HomeTab({ units, tenants, activeNotices, payments, onSelectTenant, setT
     toast("Payment confirmed, tenant notified")
   }
 
-  const disputePayment = async (payment) => {
-    const reason = window.prompt("Reason for dispute (the tenant will see this). Leave blank to skip:", "")
-    if (reason === null) return
-    const trimmed = reason.trim() || null
+  const disputePayment = async (payment, reason) => {
+    const trimmed = (reason || "").trim() || null
     let { error } = await supabase.from("payment_records").update({ verification_status: "Disputed", dispute_reason: trimmed }).eq("id", payment.id)
     if (error) {
       // dispute_reason column may not exist yet; fall back to disputing without it
@@ -346,16 +346,38 @@ function HomeTab({ units, tenants, activeNotices, payments, onSelectTenant, setT
             </div>
             <div style={{ fontSize: 22, fontWeight: 700, color: C.accent, letterSpacing: "-0.5px", marginBottom: 4 }}>{fmt(p.total_due || p.amount)}</div>
             <div style={{ fontSize: 12, color: C.muted, marginBottom: 14 }}>{lt.verifyDesc}</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              <button onClick={() => confirmPayment(p)} style={{ padding: "11px", background: C.greenSoft, border: `0.5px solid ${C.greenBorder}`, borderRadius: 10, cursor: "pointer", fontWeight: 600, color: "#065f46", fontSize: 13, fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
-                {lt.confirm}
-              </button>
-              <button onClick={() => disputePayment(p)} style={{ padding: "11px", background: C.redSoft, border: `0.5px solid ${C.redBorder}`, borderRadius: 10, cursor: "pointer", fontWeight: 600, color: "#991b1b", fontSize: 13, fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                {lt.dispute}
-              </button>
-            </div>
+            {disputingId === p.id ? (
+              <div>
+                <div style={{ fontSize: 12, color: C.muted, marginBottom: 8 }}>Why? (the tenant will see this)</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                  {DISPUTE_REASONS.map(r => (
+                    <button key={r} onClick={() => { disputePayment(p, r); setDisputingId(null) }}
+                      style={{ padding: "9px 12px", background: C.redSoft, border: `0.5px solid ${C.redBorder}`, borderRadius: 10, cursor: "pointer", fontWeight: 600, color: "#991b1b", fontSize: 12, fontFamily: "inherit" }}>
+                      {r}
+                    </button>
+                  ))}
+                  <button onClick={() => { disputePayment(p, ""); setDisputingId(null) }}
+                    style={{ padding: "9px 12px", background: C.bg, border: `0.5px solid ${C.border}`, borderRadius: 10, cursor: "pointer", fontWeight: 600, color: C.sub, fontSize: 12, fontFamily: "inherit" }}>
+                    Other reason
+                  </button>
+                </div>
+                <button onClick={() => setDisputingId(null)}
+                  style={{ width: "100%", padding: "9px", background: "none", border: "none", color: C.muted, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <button onClick={() => confirmPayment(p)} style={{ padding: "11px", background: C.greenSoft, border: `0.5px solid ${C.greenBorder}`, borderRadius: 10, cursor: "pointer", fontWeight: 600, color: "#065f46", fontSize: 13, fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  {lt.confirm}
+                </button>
+                <button onClick={() => setDisputingId(p.id)} style={{ padding: "11px", background: C.redSoft, border: `0.5px solid ${C.redBorder}`, borderRadius: 10, cursor: "pointer", fontWeight: 600, color: "#991b1b", fontSize: 13, fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  {lt.dispute}
+                </button>
+              </div>
+            )}
           </div>
         )
       })}
