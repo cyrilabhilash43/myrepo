@@ -507,7 +507,7 @@ function HomeTab({ tenant, unit, payments, lt, setActiveTab, setPayments, token 
       {/* Hero */}
       <Card style={{ marginBottom: 12 }}>
         <div style={{ fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: "-0.4px" }}>{greeting(lt)}, {tenant.name.split(" ")[0]}</div>
-        <div style={{ fontSize: 13, color: C.muted, marginTop: 4 }}>{lt.tenantSince} {tenant.joined_date}</div>
+        <div style={{ fontSize: 13, color: C.muted, marginTop: 4 }}>{lt.tenantSince} {fmtDate(tenant.joined_date)}</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 14 }}>
           {[[lt.monthlyRent, fmt(tenant.rent), C.accent], [lt.advancePaid, fmt(tenant.advance_amount), C.blue]].map(([l, v, color]) => (
             <div key={l} style={{ background: C.bg, borderRadius: 12, padding: "11px 12px", border: `0.5px solid ${C.border}` }}>
@@ -664,7 +664,7 @@ function PaymentsTab({ tenant, unit, payments, setPayments, lt, token }) {
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 15, color: C.text }}>{MONTHS[p.month - 1]} {p.year}</div>
                   <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>
-                    {p.status === "Paid" ? `${lt.paidOn} ${p.paid_on || "–"}` : `${lt.dueBy} ${MONTHS[p.month % 12]} 10`}
+                    {p.status === "Paid" ? `${lt.paidOn} ${p.paid_on ? fmtDate(p.paid_on) : "–"}` : `${lt.dueBy} ${MONTHS[p.month % 12]} 10`}
                   </div>
                   {isVerifying && <div style={{ fontSize: 11, color: C.accent, marginTop: 3, fontWeight: 500 }}>{lt.verifying}</div>}
                 </div>
@@ -1019,7 +1019,7 @@ function NoticeTab({ tenant, unit, lt, payments, token, notices }) {
             <div>
               <div style={{ background: C.amberSoft, border: `0.5px solid ${C.amberBorder}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
                 <div style={{ fontWeight: 700, fontSize: 14, color: C.amber, marginBottom: 8 }}>{lt.noticeActive}</div>
-                <div style={{ fontSize: 13, color: C.sub }}>{lt.moveOutLabel}: <strong>{notice.move_out_date}</strong></div>
+                <div style={{ fontSize: 13, color: C.sub }}>{lt.moveOutLabel}: <strong>{fmtDate(notice.move_out_date)}</strong></div>
                 <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>{lt.landlordNotified}</div>
                 <div style={{ marginTop: 10, padding: "10px 12px", background: "#fff8ed", borderRadius: 10, fontSize: 13, color: "#92400e", lineHeight: 1.6, border: `0.5px solid ${C.amberBorder}` }}>
                   {lt.noticeCancelled.replace("Notice cancelled. ", "")}

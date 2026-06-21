@@ -438,7 +438,7 @@ function HomeTab({ units, tenants, activeNotices, payments, onSelectTenant, setT
           {activeNotices.map(n => {
             const t = tenants.find(x => x.id === n.tenant_id)
             const u = units.find(x => x.id === n.unit_id)
-            return <div key={n.id} style={{ fontSize: 12, color: "#7c3aed", marginTop: 3 }}>{t?.name} · {u?.name} · Moving out {n.move_out_date}</div>
+            return <div key={n.id} style={{ fontSize: 12, color: "#7c3aed", marginTop: 3 }}>{t?.name} · {u?.name} · Moving out {fmtDate(n.move_out_date)}</div>
           })}
         </div>
       )}
@@ -580,7 +580,7 @@ function UnitsTab({ units, tenants, activeNotices, applications, onSelectTenant,
                   </div>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{tenant.name}</div>
-                    <div style={{ fontSize: 11, color: C.muted }}>{lt.since} {tenant.joined_date}</div>
+                    <div style={{ fontSize: 11, color: C.muted }}>{lt.since} {fmtDate(tenant.joined_date)}</div>
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 5, flexWrap: "wrap", justifyContent: "flex-end" }}>
@@ -1148,7 +1148,7 @@ function TenantDetail({ tenant, unit, onClose, setTenants, setUnits, setActiveNo
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <div style={{ fontSize: 12, color: C.muted }}>{p.status === "Paid" ? `Paid on ${p.paid_on}` : `Due by ${MONTHS[p.month % 12]} 10`}</div>
+                      <div style={{ fontSize: 12, color: C.muted }}>{p.status === "Paid" ? `Paid on ${fmtDate(p.paid_on)}` : `Due by ${MONTHS[p.month % 12]} 10`}</div>
                       <div style={{ fontSize: 16, fontWeight: 700, color: C.text }}>Total: {fmt(p.total_due || p.amount)}</div>
                     </div>
                     <div style={{ display: "flex", gap: 6 }}>
@@ -1179,7 +1179,7 @@ function TenantDetail({ tenant, unit, onClose, setTenants, setUnits, setActiveNo
                 <div style={{ fontWeight: 600, fontSize: 14, color: notice.status === "Settled" ? C.green : "#7c3aed", marginBottom: 4 }}>
                   {notice.status === "Settled" ? lt.settledDone : "Notice to vacate active"}
                 </div>
-                <div style={{ fontSize: 13, color: C.sub }}>Move-out date: {notice.move_out_date}</div>
+                <div style={{ fontSize: 13, color: C.sub }}>Move-out date: {fmtDate(notice.move_out_date)}</div>
               </div>
 
               {notice.status === "Active" && (
@@ -2009,7 +2009,7 @@ function AnalyticsTab({ tenants, units, payments }) {
                 {p.electricity_bill > 0 && <div style={{ background: C.amberSoft, borderRadius: 8, padding: "4px 10px", fontSize: 12, color: C.amber }}>Elec: {fmt(p.electricity_bill)}</div>}
                 <div style={{ background: C.accentSoft, borderRadius: 8, padding: "4px 10px", fontSize: 12, color: C.accent, fontWeight: 600 }}>Total: {fmt(p.total_due || p.amount)}</div>
               </div>
-              {p.paid_on && <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>Paid on {p.paid_on}</div>}
+              {p.paid_on && <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>Paid on {fmtDate(p.paid_on)}</div>}
             </div>
           ))}
         </Sheet>
@@ -2050,7 +2050,7 @@ function AnalyticsTab({ tenants, units, payments }) {
                 {p.electricity_bill > 0 && <div style={{ background: C.amberSoft, borderRadius: 8, padding: "4px 10px", fontSize: 12, color: C.amber }}>Elec: {fmt(p.electricity_bill)}</div>}
                 <div style={{ background: C.accentSoft, borderRadius: 8, padding: "4px 10px", fontSize: 12, color: C.accent, fontWeight: 600 }}>Total: {fmt(p.total_due || p.amount)}</div>
               </div>
-              {p.paid_on && <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>Paid on {p.paid_on}</div>}
+              {p.paid_on && <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>Paid on {fmtDate(p.paid_on)}</div>}
               {p.notes && <div style={{ fontSize: 11, color: C.amber, marginTop: 2 }}>{p.notes}</div>}
             </div>
           ))}
