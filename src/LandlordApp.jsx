@@ -521,16 +521,18 @@ function UnitsTab({ units, tenants, activeNotices, applications, onSelectTenant,
 
   return (
     <div>
-      {pendingApps.length > 0 && (
-        <div style={{ background: C.accentSoft, border: `0.5px solid ${C.accentBorder}`, borderRadius: 14, padding: "13px 14px", marginBottom: 12, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
-          onClick={() => setAppSheet(true)}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: C.accent }}>{pendingApps.length} pending application{pendingApps.length > 1 ? "s" : ""}</div>
-            <div style={{ fontSize: 12, color: "#6d5ad6", marginTop: 2 }}>Tap to review</div>
+      <div style={{ background: pendingApps.length > 0 ? C.accentSoft : C.surface, border: `0.5px solid ${pendingApps.length > 0 ? C.accentBorder : C.border}`, borderRadius: 14, padding: "13px 14px", marginBottom: 12, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+        onClick={() => setAppSheet(true)}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: pendingApps.length > 0 ? C.accent : C.text }}>
+            {pendingApps.length > 0 ? `${pendingApps.length} pending application${pendingApps.length > 1 ? "s" : ""}` : "Applications"}
           </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+          <div style={{ fontSize: 12, color: pendingApps.length > 0 ? "#6d5ad6" : C.muted, marginTop: 2 }}>
+            {pendingApps.length > 0 ? "Tap to review" : `${applications.length} total · tap to view`}
+          </div>
         </div>
-      )}
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={pendingApps.length > 0 ? C.accent : C.muted} strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
 
       {waitlist.length > 0 && (
         <div style={{ background: C.surface, border: `0.5px solid ${C.border}`, borderRadius: 14, padding: "13px 14px", marginBottom: 12 }}>
@@ -646,14 +648,32 @@ function UnitsTab({ units, tenants, activeNotices, applications, onSelectTenant,
 
       {/* Applications review sheet */}
       {appSheet && (
-        <Sheet title={lt.applications} subtitle={`${pendingApps.length} pending`} onClose={() => setAppSheet(null)}>
-          {pendingApps.length === 0 ? (
+        <Sheet title={lt.applications} subtitle={`${pendingApps.length} pending · ${applications.length} total`} onClose={() => setAppSheet(null)}>
+          {applications.length === 0 ? (
             <div style={{ textAlign: "center", padding: 32 }}>
               <div style={{ fontSize: 14, color: C.muted }}>{lt.noApps}</div>
             </div>
-          ) : pendingApps.map(app => (
-            <ApplicationCard key={app.id} app={app} units={units} onRequestDocs={requestDocs} onReject={rejectApp} setApplications={setApplications} setTenants={setTenants} setUnits={setUnits} onClose={() => setAppSheet(null)} />
-          ))}
+          ) : (
+            <>
+              {pendingApps.map(app => (
+                <ApplicationCard key={app.id} app={app} units={units} onRequestDocs={requestDocs} onReject={rejectApp} setApplications={setApplications} setTenants={setTenants} setUnits={setUnits} onClose={() => setAppSheet(null)} />
+              ))}
+              {applications.filter(a => a.status !== "Pending").length > 0 && (
+                <div style={{ fontSize: 11, fontWeight: 600, color: C.muted, textTransform: "uppercase", letterSpacing: "0.07em", margin: "16px 0 8px" }}>History</div>
+              )}
+              {applications.filter(a => a.status !== "Pending").map(app => (
+                <div key={app.id} style={{ background: C.surface, borderRadius: 12, border: `0.5px solid ${C.border}`, padding: "12px 14px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{app.name}</div>
+                    <div style={{ fontSize: 12, color: C.muted, marginTop: 1 }}>Unit {app.unit_name} · {fmtDate(app.applied_at)}</div>
+                  </div>
+                  {app.status === "Approved"
+                    ? <Pill label="Approved" color={C.green} bg={C.greenSoft} border={C.greenBorder} />
+                    : <Pill label="Rejected" color={C.muted} bg={C.bg} border={C.border} />}
+                </div>
+              ))}
+            </>
+          )}
         </Sheet>
       )}
     </div>
@@ -2110,7 +2130,7 @@ export default function LandlordApp({ user, onLogout }) {
       supabase.from("tenants").select("*").eq("status", "Active").order("id"),
       supabase.from("payment_records").select("*").order("year").order("month"),
       supabase.from("notices").select("*").eq("status", "Active"),
-      supabase.from("applications").select("*").eq("status", "Pending").order("applied_at", { ascending: false }),
+      supabase.from("applications").select("*").order("applied_at", { ascending: false }),
     ]).then(([{ data: u }, { data: t }, { data: p }, { data: n }, { data: a }]) => {
       if (u) setUnits(u)
       if (t) setTenants(t)
