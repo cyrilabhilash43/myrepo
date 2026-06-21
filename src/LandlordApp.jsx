@@ -24,6 +24,14 @@ function notifyTenant(tenant_id, title, body, url = "/") {
   }).catch(() => {})
 }
 
+// Audit log: track which landlord did what. Actor is set on login.
+let currentActor = null
+function setActor(name) { currentActor = name }
+function logAudit(action) {
+  if (!currentActor) return
+  supabase.from("audit_log").insert([{ actor_name: currentActor, action }]).then(() => {}, () => {})
+}
+
 const LangCtx = createContext(null)
 const useLT = () => useContext(LangCtx) || LT.en
 
@@ -292,6 +300,7 @@ function HomeTab({ units, tenants, activeNotices, payments, onSelectTenant, setT
     }
     notifyTenant(payment.tenant_id, "Payment confirmed", `Your ${MONTHS[payment.month - 1]} ${payment.year} payment of ${fmt(payment.total_due || payment.amount)} is confirmed. Thank you!`)
     toast("Payment confirmed, tenant notified")
+    logAudit(`Confirmed ${tenant?.name || "tenant"} ${MONTHS[payment.month - 1]} ${payment.year} payment`)
   }
 
   const disputePayment = async (payment, reason) => {
@@ -304,6 +313,7 @@ function HomeTab({ units, tenants, activeNotices, payments, onSelectTenant, setT
     setPayments(ps => ps.map(p => p.id === payment.id ? { ...p, verification_status: "Disputed", dispute_reason: trimmed } : p))
     notifyTenant(payment.tenant_id, "Payment needs attention", trimmed ? `Your ${MONTHS[payment.month - 1]} payment could not be confirmed: ${trimmed}` : `Your ${MONTHS[payment.month - 1]} payment could not be confirmed. Please review and pay again.`, "/")
     toast("Marked as disputed, tenant notified", "info")
+    logAudit(`Disputed ${tenants.find(t => t.id === payment.tenant_id)?.name || "tenant"} ${MONTHS[payment.month - 1]} payment${trimmed ? ` (${trimmed})` : ""}`)
   }
 
   const remindAllOverdue = () => {
@@ -828,6 +838,7 @@ function TenantDetail({ tenant, unit, onClose, setTenants, setUnits, setActiveNo
     tenant.agreement_status = "Complete"
     setUploadingAgreement(false)
     toast("Agreement uploaded")
+    logAudit(`Uploaded agreement for ${tenant.name}`)
   }
 
   const outstanding = payments.filter(p => p.status === "Unpaid").reduce((s, p) => s + Number(p.total_due || p.amount), 0)
@@ -1227,6 +1238,7 @@ function DeductionsSection({ notice, tenant, unit, lt, onClose, setTenants, setU
         setActiveNotices && setActiveNotices(ns => ns.filter(n => n.id !== notice.id))
         setSettling(false)
         toast("Settled, unit marked vacant")
+        logAudit(`Settled move-out for ${tenant.name} (${unit.name})`)
         onClose()
       }} disabled={settling}
         style={{ width: "100%", padding: "14px", background: settling ? C.bg : C.green, border: "none", borderRadius: 14, cursor: settling ? "default" : "pointer", fontWeight: 700, color: settling ? C.muted : "#fff", fontSize: 14, fontFamily: "inherit" }}>
@@ -1283,6 +1295,7 @@ function BillsTab({ tenants, units }) {
     }
     setSaving(false); setSaved(true)
     toast("Bills saved for all units")
+    logAudit(`Saved ${MONTH_NAMES[month - 1]} ${year} bills`)
     setTimeout(() => setSaved(false), 3000)
   }
 
@@ -1639,9 +1652,11 @@ function AnalyticsTab({ tenants, units, payments }) {
   const [expenses, setExpenses] = useState([])
   const [showExpForm, setShowExpForm] = useState(false)
   const [expForm, setExpForm] = useState({ category: "Repairs", amount: "", note: "", date: new Date().toISOString().split("T")[0] })
+  const [activity, setActivity] = useState([])
 
   useEffect(() => {
     supabase.from("expenses").select("*").order("expense_date", { ascending: false }).then(({ data }) => { if (data) setExpenses(data) })
+    supabase.from("audit_log").select("*").order("id", { ascending: false }).limit(30).then(({ data }) => { if (data) setActivity(data) })
   }, [])
 
   const thisYear = new Date().getFullYear()
@@ -1653,7 +1668,7 @@ function AnalyticsTab({ tenants, units, payments }) {
     const amt = Number(expForm.amount)
     if (!amt || amt <= 0) { toast("Enter a valid amount", "error"); return }
     const { data } = await supabase.from("expenses").insert([{ category: expForm.category, amount: amt, note: expForm.note || null, expense_date: expForm.date }]).select().single()
-    if (data) { setExpenses(es => [data, ...es]); setShowExpForm(false); setExpForm({ category: "Repairs", amount: "", note: "", date: new Date().toISOString().split("T")[0] }); toast("Expense added") }
+    if (data) { setExpenses(es => [data, ...es]); setShowExpForm(false); setExpForm({ category: "Repairs", amount: "", note: "", date: new Date().toISOString().split("T")[0] }); toast("Expense added"); logAudit(`Added expense: ${expForm.category} ${fmt(amt)}`) }
     else toast("Could not add expense", "error")
   }
 
@@ -1837,6 +1852,25 @@ function AnalyticsTab({ tenants, units, payments }) {
         ))}
       </Card>
 
+      {/* Activity log */}
+      {activity.length > 0 && (
+        <Card style={{ marginBottom: 14 }}>
+          <div style={{ fontWeight: 600, fontSize: 14, color: C.text, marginBottom: 4 }}>Activity log</div>
+          <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>Who did what</div>
+          {activity.map(a => (
+            <div key={a.id} style={{ display: "flex", gap: 10, padding: "9px 0", borderTop: `0.5px solid ${C.border}` }}>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: C.accentSoft, border: `0.5px solid ${C.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: C.accent, flexShrink: 0 }}>
+                {(a.actor_name || "?").charAt(0)}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, color: C.text }}><span style={{ fontWeight: 600 }}>{a.actor_name}</span> {a.action}</div>
+                <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>{a.created_at ? new Date(a.created_at).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}</div>
+              </div>
+            </div>
+          ))}
+        </Card>
+      )}
+
       {/* Month drill-down sheet */}
       {monthDetail && (
         <Sheet title={`${monthDetail.month} 2026`} subtitle={`${fmt(monthDetail.collected)} collected · ${fmt(monthDetail.outstanding)} outstanding`} onClose={() => setMonthDetail(null)}>
@@ -1959,6 +1993,8 @@ export default function LandlordApp({ user, onLogout }) {
   const now = new Date()
   const currentMonth = now.getMonth() + 1
   const currentYear = now.getFullYear()
+
+  useEffect(() => { setActor(user?.name) }, [user])
 
   useEffect(() => {
     Promise.all([
