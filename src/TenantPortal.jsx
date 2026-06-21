@@ -1037,7 +1037,20 @@ export default function TenantPortal({ token }) {
   const hasOverdue = overdueCount > 0
 
   if (!lang) return <LangSelect onSelect={selectLang} />
-  if (loading) return <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", color: C.muted, fontSize: 14 }}>Loading...</div>
+  if (loading) return (
+    <div style={{ minHeight: "100vh", background: C.bg, fontFamily: "'DM Sans', sans-serif", padding: 16 }}>
+      <style>{`@keyframes pm-shimmer{0%{opacity:.55}50%{opacity:1}100%{opacity:.55}}`}</style>
+      {(() => { const sk = (h, w = "100%", mb = 12, r = 14) => <div style={{ height: h, width: w, background: C.border, borderRadius: r, marginBottom: mb, animation: "pm-shimmer 1.2s ease-in-out infinite" }} />; return (
+        <>
+          <div style={{ background: C.surface, borderRadius: 18, border: `0.5px solid ${C.border}`, padding: 16, marginBottom: 12 }}>
+            {sk(22, "55%", 10)}{sk(13, "35%", 16, 8)}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>{sk(54, "100%", 0)}{sk(54, "100%", 0)}</div>
+          </div>
+          {sk(120)}{sk(96)}{sk(96)}
+        </>
+      ) })()}
+    </div>
+  )
   if (notFound) return (
     <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", padding: 32, textAlign: "center" }}>
       <div style={{ fontWeight: 700, fontSize: 20, color: C.text, marginBottom: 12 }}>Portal not found</div>

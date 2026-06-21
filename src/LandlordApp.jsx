@@ -306,16 +306,29 @@ function HomeTab({ units, tenants, activeNotices, payments, onSelectTenant, setT
     toast("Marked as disputed, tenant notified", "info")
   }
 
+  const remindAllOverdue = () => {
+    const overdueTenants = tenants.filter(t => t.payment_status === "Overdue")
+    overdueTenants.forEach(t => notifyTenant(t.id, "Rent reminder", "Your rent is overdue. Please open the app to pay at your earliest. Thank you.", "/"))
+    toast(`Reminder sent to ${overdueTenants.length} tenant${overdueTenants.length === 1 ? "" : "s"}`)
+  }
+
   return (
     <div>
       {/* Alerts */}
       {overdueCount > 0 && (
-        <div style={{ background: C.redSoft, border: `0.5px solid ${C.redBorder}`, borderRadius: 16, padding: "14px 16px", marginBottom: 10, display: "flex", gap: 10, alignItems: "flex-start", boxShadow: "0 1px 3px rgba(220,38,38,0.08)" }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth="1.5" style={{ flexShrink: 0, marginTop: 1 }}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: C.red }}>{lt.overdueAlert(overdueCount)}</div>
-            <div style={{ fontSize: 12, color: "#b91c1c", marginTop: 2 }}>{lt.overdueAlertSub}</div>
+        <div style={{ background: C.redSoft, border: `0.5px solid ${C.redBorder}`, borderRadius: 16, padding: "14px 16px", marginBottom: 10, boxShadow: "0 1px 3px rgba(220,38,38,0.08)" }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth="1.5" style={{ flexShrink: 0, marginTop: 1 }}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.red }}>{lt.overdueAlert(overdueCount)}</div>
+              <div style={{ fontSize: 12, color: "#b91c1c", marginTop: 2 }}>{lt.overdueAlertSub}</div>
+            </div>
           </div>
+          <button onClick={remindAllOverdue}
+            style={{ width: "100%", marginTop: 12, padding: "10px", background: C.red, border: "none", borderRadius: 10, cursor: "pointer", fontWeight: 600, color: "#fff", fontSize: 13, fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            Remind all overdue
+          </button>
         </div>
       )}
       {billsMissing && (
@@ -1917,7 +1930,18 @@ export default function LandlordApp({ user, onLogout }) {
         </div>
 
         <div style={{ maxWidth: 500, margin: "0 auto", padding: "16px 16px" }}>
-          {loading ? <div style={{ textAlign: "center", padding: 60, color: C.muted }}>Loading...</div> : (
+          {loading ? (
+            <div>
+              <style>{`@keyframes pm-shimmer{0%{opacity:.55}50%{opacity:1}100%{opacity:.55}}`}</style>
+              {(() => { const sk = (h, w = "100%", mb = 10, r = 14) => <div style={{ height: h, width: w, background: C.border, borderRadius: r, marginBottom: mb, animation: "pm-shimmer 1.2s ease-in-out infinite" }} />; return (
+                <>
+                  {sk(70)}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>{sk(88, "100%", 0)}{sk(88, "100%", 0)}{sk(88, "100%", 0)}{sk(88, "100%", 0)}</div>
+                  {sk(64)}{sk(64)}{sk(64)}
+                </>
+              ) })()}
+            </div>
+          ) : (
             <>
               {activeTab === "home" && <HomeTab units={units} tenants={tenants} activeNotices={activeNotices} payments={payments} onSelectTenant={(t, u) => { setSelectedTenant(t); setSelectedUnit(u) }} setTenants={setTenants} setPayments={setPayments} currentMonth={currentMonth} currentYear={currentYear} />}
               {activeTab === "units" && <UnitsTab units={units} tenants={tenants} activeNotices={activeNotices} applications={applications} onSelectTenant={(t, u) => { setSelectedTenant(t); setSelectedUnit(u) }} setTenants={setTenants} setUnits={setUnits} setApplications={setApplications} />}
