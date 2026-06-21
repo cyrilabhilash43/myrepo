@@ -1223,6 +1223,40 @@ function DeductionsSection({ notice, tenant, unit, lt, onClose, setTenants, setU
     [lt.cleaning, lt.cleaningHint, "cleaning"], [lt.otherDeduction, lt.otherHint, "other"],
   ]
 
+  const printStatement = () => {
+    const rows = [["Advance held", Number(notice.advance_amount), "+"]]
+    if (Number(notice.outstanding_dues) > 0) rows.push(["Outstanding rent dues", Number(notice.outstanding_dues), "−"])
+    if (Number(d.painting) > 0) rows.push(["Painting", Number(d.painting), "−"])
+    if (Number(d.damages) > 0) rows.push(["Damages", Number(d.damages), "−"])
+    if (Number(d.cleaning) > 0) rows.push(["Cleaning", Number(d.cleaning), "−"])
+    if (Number(d.other) > 0) rows.push([d.otherNote ? `Other (${d.otherNote})` : "Other", Number(d.other), "−"])
+    const inr = (n) => "₹" + Number(n).toLocaleString("en-IN")
+    const lines = rows.map(([l, v, sign]) => `<tr><td style="padding:8px 0;color:#4a4a6a">${l}</td><td style="padding:8px 0;text-align:right;font-weight:600;color:${sign === "+" ? "#059669" : "#dc2626"}">${sign} ${inr(v)}</td></tr>`).join("")
+    const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Settlement-${unit.name}</title></head>
+<body style="font-family:-apple-system,system-ui,Segoe UI,Roboto,sans-serif;color:#1a1a2e;margin:0;padding:28px;background:#fff">
+<div style="max-width:440px;margin:0 auto">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #ede9fe;padding-bottom:16px;margin-bottom:18px">
+    <div><div style="font-size:20px;font-weight:800;color:#5046e5">Property Manager</div><div style="font-size:13px;color:#9090a8;margin-top:2px">Move-out Settlement Statement</div></div>
+  </div>
+  <table style="width:100%;font-size:14px;margin-bottom:6px">
+    <tr><td style="padding:4px 0;color:#9090a8">Tenant</td><td style="padding:4px 0;text-align:right;font-weight:600">${tenant.name}</td></tr>
+    <tr><td style="padding:4px 0;color:#9090a8">Unit</td><td style="padding:4px 0;text-align:right;font-weight:600">${unit.name} · ${unit.floor}</td></tr>
+    <tr><td style="padding:4px 0;color:#9090a8">Notice date</td><td style="padding:4px 0;text-align:right;font-weight:600">${notice.notice_date || "-"}</td></tr>
+    <tr><td style="padding:4px 0;color:#9090a8">Move-out date</td><td style="padding:4px 0;text-align:right;font-weight:600">${notice.move_out_date || "-"}</td></tr>
+  </table>
+  <div style="border-top:1px solid #e8e8f0;margin:14px 0"></div>
+  <table style="width:100%;font-size:14px">${lines}
+    <tr><td style="padding:12px 0 0;font-weight:800;font-size:16px;border-top:2px solid #1a1a2e">${landlordPays ? "Refund to tenant" : "Tenant owes"}</td><td style="padding:12px 0 0;text-align:right;font-weight:800;font-size:16px;border-top:2px solid #1a1a2e;color:${landlordPays ? "#059669" : "#dc2626"}">${inr(Math.abs(final))}</td></tr>
+  </table>
+  <div style="font-size:12px;color:#9090a8;margin-top:24px;line-height:1.6">Computer-generated move-out settlement. Advance held minus any outstanding dues and agreed deductions.</div>
+</div>
+<script>window.onload=function(){setTimeout(function(){window.print()},350)}</script>
+</body></html>`
+    const w = window.open("", "_blank")
+    if (!w) { toast("Allow pop-ups to save the statement", "error"); return }
+    w.document.write(html); w.document.close()
+  }
+
   return (
     <div>
       <div style={{ background: C.amberSoft, border: `0.5px solid ${C.amberBorder}`, borderRadius: 14, padding: 16, marginBottom: 14 }}>
@@ -1273,6 +1307,11 @@ function DeductionsSection({ notice, tenant, unit, lt, onClose, setTenants, setU
       }} disabled={settling}
         style={{ width: "100%", padding: "14px", background: settling ? C.bg : C.green, border: "none", borderRadius: 14, cursor: settling ? "default" : "pointer", fontWeight: 700, color: settling ? C.muted : "#fff", fontSize: 14, fontFamily: "inherit" }}>
         {settling ? "Processing..." : lt.settleAndVacate}
+      </button>
+      <button onClick={printStatement}
+        style={{ width: "100%", marginTop: 8, padding: "12px", background: C.surface, border: `0.5px solid ${C.border}`, borderRadius: 14, cursor: "pointer", fontWeight: 600, color: C.accent, fontSize: 13, fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Settlement statement (print / save)
       </button>
     </div>
   )

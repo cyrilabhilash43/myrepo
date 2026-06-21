@@ -8,6 +8,11 @@ const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"]
 const UPI_ID = "kavitha1713-2@okaxis"
 const UPI_NAME = "Kavitha"
+const NTFY_TOPIC = "building-cyril-a59e9c4aeb"
+
+function notifyLandlord(text) {
+  fetch(`https://ntfy.sh/${NTFY_TOPIC}`, { method: "POST", body: text, headers: { Title: "Building update" } }).catch(() => {})
+}
 
 function isOverdue(month, year) {
   return new Date() > new Date(year, month, 10)
@@ -999,6 +1004,7 @@ function NoticeTab({ tenant, unit, lt, payments }) {
 
   const submitNotice = async () => {
     if (!moveOutDate) return
+    if (moveOutDate < new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]) { toast(lt.minNotice, "error"); return }
     setSubmitting(true)
     const settlement = Number(tenant.advance_amount) - outstanding
     const { data } = await supabase.from("notices").insert([{
@@ -1007,7 +1013,7 @@ function NoticeTab({ tenant, unit, lt, payments }) {
       advance_amount: tenant.advance_amount, outstanding_dues: outstanding,
       settlement_amount: Math.abs(settlement), landlord_pays: settlement > 0, status: "Active",
     }]).select().single()
-    if (data) { setNotice(data); toast("Notice submitted") }
+    if (data) { setNotice(data); toast("Notice submitted"); notifyLandlord(`${tenant.name} (Unit ${unit.name}) gave notice to vacate on ${moveOutDate}`) }
     setSubmitting(false)
   }
 
@@ -1071,6 +1077,7 @@ function NoticeTab({ tenant, unit, lt, payments }) {
             <div style={{ fontSize: 14, color: C.muted, marginBottom: 16, lineHeight: 1.7 }}>{lt.noticeDesc}</div>
             <Field label={lt.moveOutDate}>
               <input type="date" style={iStyle} value={moveOutDate} onChange={e => setMoveOutDate(e.target.value)} min={minDate} />
+              <div style={{ fontSize: 12, color: C.muted, marginTop: 6 }}>{lt.minNotice}</div>
             </Field>
             {moveOutDate && (
               <div style={{ background: C.bg, borderRadius: 12, padding: 14, marginBottom: 14, border: `0.5px solid ${C.border}` }}>
