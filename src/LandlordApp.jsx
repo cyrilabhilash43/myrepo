@@ -1630,10 +1630,39 @@ function MaintenanceTab() {
 }
 
 // ── ANALYTICS TAB ──────────────────────────────────────────────────────────────
+const EXP_CATEGORIES = ["Repairs", "Utilities", "Taxes", "Cleaning", "Other"]
+
 function AnalyticsTab({ tenants, units, payments }) {
   const lt = useLT()
   const [monthDetail, setMonthDetail] = useState(null)   // { month, collected, outstanding, rows }
   const [tenantDetail, setTenantDetail] = useState(null) // { tenant, unit, payments, score }
+  const [expenses, setExpenses] = useState([])
+  const [showExpForm, setShowExpForm] = useState(false)
+  const [expForm, setExpForm] = useState({ category: "Repairs", amount: "", note: "", date: new Date().toISOString().split("T")[0] })
+
+  useEffect(() => {
+    supabase.from("expenses").select("*").order("expense_date", { ascending: false }).then(({ data }) => { if (data) setExpenses(data) })
+  }, [])
+
+  const thisYear = new Date().getFullYear()
+  const yearCollected = payments.filter(p => p.year === thisYear && p.status === "Paid").reduce((s, p) => s + Number(p.total_due || p.amount), 0)
+  const yearExpenses = expenses.filter(e => new Date(e.expense_date).getFullYear() === thisYear).reduce((s, e) => s + Number(e.amount), 0)
+  const netProfit = yearCollected - yearExpenses
+
+  const addExpense = async () => {
+    const amt = Number(expForm.amount)
+    if (!amt || amt <= 0) { toast("Enter a valid amount", "error"); return }
+    const { data } = await supabase.from("expenses").insert([{ category: expForm.category, amount: amt, note: expForm.note || null, expense_date: expForm.date }]).select().single()
+    if (data) { setExpenses(es => [data, ...es]); setShowExpForm(false); setExpForm({ category: "Repairs", amount: "", note: "", date: new Date().toISOString().split("T")[0] }); toast("Expense added") }
+    else toast("Could not add expense", "error")
+  }
+
+  const deleteExpense = async (id) => {
+    if (!window.confirm("Remove this expense?")) return
+    await supabase.from("expenses").delete().eq("id", id)
+    setExpenses(es => es.filter(e => e.id !== id))
+    toast("Expense removed", "info")
+  }
 
   const totalRent = tenants.filter(t => t.status === "Active").reduce((s, t) => s + Number(t.rent), 0)
   const totalAdvance = tenants.filter(t => t.status === "Active").reduce((s, t) => s + Number(t.advance_amount), 0)
@@ -1706,6 +1735,59 @@ function AnalyticsTab({ tenants, units, payments }) {
             </div>
           ))}
         </div>
+      </Card>
+
+      {/* Profit / Expenses */}
+      <Card style={{ marginBottom: 14 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div style={{ fontWeight: 600, fontSize: 14, color: C.text }}>Profit · {thisYear}</div>
+          <button onClick={() => setShowExpForm(s => !s)}
+            style={{ padding: "7px 12px", background: showExpForm ? C.bg : C.accentSoft, border: `0.5px solid ${showExpForm ? C.border : C.accentBorder}`, borderRadius: 10, cursor: "pointer", fontWeight: 600, color: showExpForm ? C.muted : C.accent, fontSize: 12, fontFamily: "inherit" }}>
+            {showExpForm ? "Cancel" : "+ Add expense"}
+          </button>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: showExpForm || expenses.length ? 14 : 0 }}>
+          {[["Income", fmt(yearCollected), C.green], ["Expenses", fmt(yearExpenses), C.red], ["Net", fmt(netProfit), netProfit >= 0 ? C.accent : C.red]].map(([l, v, color]) => (
+            <div key={l} style={{ background: C.bg, borderRadius: 10, padding: "10px 8px", border: `0.5px solid ${C.border}` }}>
+              <div style={{ fontSize: 9, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 5 }}>{l}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color, letterSpacing: "-0.3px" }}>{v}</div>
+            </div>
+          ))}
+        </div>
+
+        {showExpForm && (
+          <div style={{ background: C.bg, borderRadius: 12, padding: 14, marginBottom: 14, border: `0.5px solid ${C.border}` }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+              {EXP_CATEGORIES.map(c => (
+                <button key={c} onClick={() => setExpForm(f => ({ ...f, category: c }))}
+                  style={{ padding: "7px 12px", background: expForm.category === c ? C.accent : C.surface, border: `0.5px solid ${expForm.category === c ? C.accent : C.border}`, borderRadius: 20, cursor: "pointer", fontWeight: 600, color: expForm.category === c ? "#fff" : C.sub, fontSize: 12, fontFamily: "inherit" }}>
+                  {c}
+                </button>
+              ))}
+            </div>
+            <input type="number" inputMode="numeric" placeholder="Amount" value={expForm.amount} onChange={e => setExpForm(f => ({ ...f, amount: e.target.value }))}
+              style={{ width: "100%", padding: "11px 12px", background: C.surface, border: `0.5px solid ${C.border}`, borderRadius: 10, fontSize: 16, color: C.text, outline: "none", fontFamily: "inherit", marginBottom: 8, boxSizing: "border-box" }} />
+            <input type="text" placeholder="Note (optional)" value={expForm.note} onChange={e => setExpForm(f => ({ ...f, note: e.target.value }))}
+              style={{ width: "100%", padding: "11px 12px", background: C.surface, border: `0.5px solid ${C.border}`, borderRadius: 10, fontSize: 14, color: C.text, outline: "none", fontFamily: "inherit", marginBottom: 8, boxSizing: "border-box" }} />
+            <input type="date" value={expForm.date} onChange={e => setExpForm(f => ({ ...f, date: e.target.value }))}
+              style={{ width: "100%", padding: "11px 12px", background: C.surface, border: `0.5px solid ${C.border}`, borderRadius: 10, fontSize: 14, color: C.text, outline: "none", fontFamily: "inherit", marginBottom: 10, boxSizing: "border-box" }} />
+            <button onClick={addExpense}
+              style={{ width: "100%", padding: "12px", background: C.accent, border: "none", borderRadius: 10, cursor: "pointer", fontWeight: 700, color: "#fff", fontSize: 14, fontFamily: "inherit" }}>
+              Save expense
+            </button>
+          </div>
+        )}
+
+        {expenses.slice(0, 8).map(e => (
+          <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0", borderTop: `0.5px solid ${C.border}` }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{e.category}{e.note ? <span style={{ color: C.muted, fontWeight: 400 }}> · {e.note}</span> : ""}</div>
+              <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>{e.expense_date}</div>
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.red }}>−{fmt(e.amount)}</div>
+            <button onClick={() => deleteExpense(e.id)} style={{ background: "none", border: "none", color: C.muted, cursor: "pointer", padding: 4, fontSize: 16, lineHeight: 1, fontFamily: "inherit" }}>×</button>
+          </div>
+        ))}
       </Card>
 
       {/* Tenant health — rows are tappable */}
