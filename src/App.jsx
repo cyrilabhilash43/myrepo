@@ -159,7 +159,7 @@ export default function App() {
   const [landlordUser, setLandlordUser] = useState(null)
   const [authChecked, setAuthChecked] = useState(false)
 
-  useEffect(() => {
+  useEffect(() => { (async () => {
     const path = window.location.pathname
     if (path.startsWith("/tenant/")) {
       setTenantToken(path.replace("/tenant/", ""))
@@ -179,11 +179,17 @@ export default function App() {
         setView("tenant")
       } else {
         setView("landlord")
-        if (landlordStored) { try { setLandlordUser(JSON.parse(landlordStored)) } catch { localStorage.removeItem("landlord_user") } }
+        if (landlordStored) {
+          // Require a real authenticated session (post-lockdown the app needs it);
+          // if it's missing/expired, send them back to the PIN screen to re-establish one.
+          const { data } = await supabase.auth.getSession()
+          if (data?.session) { try { setLandlordUser(JSON.parse(landlordStored)) } catch { localStorage.removeItem("landlord_user") } }
+          else localStorage.removeItem("landlord_user")
+        }
       }
     }
     setAuthChecked(true)
-  }, [])
+  })() }, [])
 
   if (!authChecked) return null
 

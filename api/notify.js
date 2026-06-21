@@ -4,7 +4,8 @@
 import webpush from "web-push"
 
 const SUPA_URL = process.env.VITE_SUPABASE_URL || "https://xasbqstbdhcjpujwkkhe.supabase.co"
-const SUPA_KEY = process.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_qE_UhjfdIGAn7dQu_u1HBw_M-W4jF-j"
+// Use the service role server-side so it keeps working after anon is locked out of tables.
+const SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE || process.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_qE_UhjfdIGAn7dQu_u1HBw_M-W4jF-j"
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ ok: false, error: "POST only" })
