@@ -39,13 +39,32 @@ function LoginScreen({ onLogin }) {
 
   const verifyPin = async (enteredPin) => {
     setChecking(true)
-    const { data, error } = await supabase.rpc("verify_landlord_pin", { p_name: selectedUser.name, p_pin: enteredPin })
-    if (data && !error) {
-      localStorage.setItem("landlord_user", JSON.stringify({ id: data.id, name: data.name }))
-      onLogin({ id: data.id, name: data.name })
-    } else {
-      setError("Incorrect PIN. Try again.")
-      setPin("")
+    try {
+      // Primary: verify PIN server-side + establish a real authenticated session
+      const resp = await fetch("/api/landlord-login", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: selectedUser.name, pin: enteredPin }),
+      })
+      const j = await resp.json()
+      if (resp.ok && j.ok) {
+        await supabase.auth.verifyOtp({ token_hash: j.token_hash, type: "email" }).catch(() => {})
+        localStorage.setItem("landlord_user", JSON.stringify(j.landlord))
+        onLogin(j.landlord)
+        setChecking(false)
+        return
+      }
+      if (resp.status === 401) { setError("Incorrect PIN. Try again."); setPin(""); setChecking(false); return }
+      throw new Error("login service error")
+    } catch {
+      // Fallback (e.g. login service unreachable): direct PIN check, no session
+      const { data, error } = await supabase.rpc("verify_landlord_pin", { p_name: selectedUser.name, p_pin: enteredPin })
+      if (data && !error) {
+        localStorage.setItem("landlord_user", JSON.stringify({ id: data.id, name: data.name }))
+        onLogin({ id: data.id, name: data.name })
+      } else {
+        setError("Incorrect PIN. Try again.")
+        setPin("")
+      }
     }
     setChecking(false)
   }
@@ -172,7 +191,7 @@ export default function App() {
   if (view === "tenant") content = <TenantPortal token={tenantToken} />
   else if (view === "apply") content = <ApplicationPortal unitName={applyUnitName} />
   else if (view === "landlord" && !landlordUser) content = <LoginScreen onLogin={setLandlordUser} />
-  else if (view === "landlord" && landlordUser) content = <LandlordApp user={landlordUser} onLogout={() => { localStorage.removeItem("landlord_user"); setLandlordUser(null) }} />
+  else if (view === "landlord" && landlordUser) content = <LandlordApp user={landlordUser} onLogout={() => { supabase.auth.signOut().catch(() => {}); localStorage.removeItem("landlord_user"); setLandlordUser(null) }} />
 
   return (
     <>
