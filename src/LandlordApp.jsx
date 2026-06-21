@@ -24,6 +24,14 @@ function notifyTenant(tenant_id, title, body, url = "/") {
   }).catch(() => {})
 }
 
+// Remove an applicant's uploaded ID docs once their application is resolved.
+async function deleteApplicantDocs(appId) {
+  const { data } = await supabase.storage.from("documents").list(`applications/${appId}`)
+  if (data && data.length) {
+    await supabase.storage.from("documents").remove(data.map(f => `applications/${appId}/${f.name}`))
+  }
+}
+
 // Audit log: track which landlord did what. Actor is set on login.
 let currentActor = null
 function setActor(name) { currentActor = name }
@@ -506,6 +514,7 @@ function UnitsTab({ units, tenants, activeNotices, applications, onSelectTenant,
     const msg = encodeURIComponent(`Hi ${app.name}, thank you for applying for Unit ${app.unit_name}. Unfortunately we are unable to accommodate your application at this time. We wish you the best in finding a suitable place.`)
     window.open(`https://wa.me/${app.phone}?text=${msg}`, "_blank")
     await supabase.from("applications").update({ status: "Rejected" }).eq("id", app.id)
+    await deleteApplicantDocs(app.id)
     setApplications(as => as.filter(a => a.id !== app.id))
   }
 
@@ -679,6 +688,7 @@ function ApplicationCard({ app, units, onRequestDocs, onReject, setApplications,
       const portalLink = `${window.location.origin}/tenant/${token}`
       const msg = encodeURIComponent(`Hi ${app.name}! 🎉 Your application for Unit ${app.unit_name} has been approved!\n\nWelcome to your new home. Here is your personal tenant portal:\n${portalLink}\n\nYou can use it to pay rent, upload documents, and report any issues.\n\nPlease open the link in Safari or Chrome and tap "Add to Home Screen" to install it as an app.\n\nLooking forward to having you here! 🏠`)
       window.open(`https://wa.me/${app.phone}?text=${msg}`, "_blank")
+      await deleteApplicantDocs(app.id)
       setTenants(ts => [...ts, tenant])
       setUnits(us => us.map(u => u.id === app.unit_id ? { ...u, status: "Occupied" } : u))
       setApplications(as => as.filter(a => a.id !== app.id))
@@ -918,6 +928,17 @@ function TenantDetail({ tenant, unit, onClose, setTenants, setUnits, setActiveNo
     if (data) { setNotice(data); setShowNoticeForm(false); setActiveNotices && setActiveNotices(ns => [...ns, data]) }
   }
 
+  const deleteIdDocs = async () => {
+    if (!window.confirm("Permanently delete this tenant's Aadhaar/PAN files? Do this only after you've verified them. This cannot be undone.")) return
+    const paths = tenantDocs.map(d => `${tenant.id}/${d.name}`)
+    if (!paths.length) { toast("No documents to delete", "info"); return }
+    const { error } = await supabase.storage.from("documents").remove(paths)
+    if (error) { toast("Could not delete documents", "error"); return }
+    setTenantDocs([])
+    toast("ID documents deleted")
+    logAudit(`Deleted ID documents for ${tenant.name}`)
+  }
+
   const sendPortal = () => {
     const link = `${window.location.origin}/tenant/${tenant.portal_token}`
     const msg = encodeURIComponent(`Hi ${tenant.name}! Here is your tenant portal for Unit ${unit.name}:\n${link}\n\nYou can pay rent, upload documents, report issues, and more. Open in Safari and tap "Add to Home Screen" to install as an app.`)
@@ -1049,6 +1070,12 @@ function TenantDetail({ tenant, unit, onClose, setTenants, setUnits, setActiveNo
                 </div>
               )
             })}
+            {tenantDocs.length > 0 && (
+              <button onClick={deleteIdDocs}
+                style={{ width: "100%", marginTop: 12, padding: "10px", background: C.redSoft, border: `0.5px solid ${C.redBorder}`, borderRadius: 10, cursor: "pointer", fontWeight: 600, color: C.red, fontSize: 12, fontFamily: "inherit" }}>
+                Delete ID documents (after verifying)
+              </button>
+            )}
           </div>
 
           <button onClick={sendPortal}
