@@ -3,6 +3,7 @@ import { supabase } from "./supabase"
 import LandlordApp from "./LandlordApp"
 import TenantPortal from "./TenantPortal"
 import ApplicationPortal from "./ApplicationPortal"
+import { ToastHost } from "./toast"
 
 const C = {
   bg: "#f5f5f7", surface: "#ffffff", border: "#e8e8f0",
@@ -166,9 +167,17 @@ export default function App() {
   }, [])
 
   if (!authChecked) return null
-  if (view === "tenant") return <TenantPortal token={tenantToken} />
-  if (view === "apply") return <ApplicationPortal unitName={applyUnitName} />
-  if (view === "landlord" && !landlordUser) return <LoginScreen onLogin={setLandlordUser} />
-  if (view === "landlord" && landlordUser) return <LandlordApp user={landlordUser} onLogout={() => { localStorage.removeItem("landlord_user"); setLandlordUser(null) }} />
-  return null
+
+  let content = null
+  if (view === "tenant") content = <TenantPortal token={tenantToken} />
+  else if (view === "apply") content = <ApplicationPortal unitName={applyUnitName} />
+  else if (view === "landlord" && !landlordUser) content = <LoginScreen onLogin={setLandlordUser} />
+  else if (view === "landlord" && landlordUser) content = <LandlordApp user={landlordUser} onLogout={() => { localStorage.removeItem("landlord_user"); setLandlordUser(null) }} />
+
+  return (
+    <>
+      {content}
+      <ToastHost />
+    </>
+  )
 }

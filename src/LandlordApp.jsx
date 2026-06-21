@@ -1,5 +1,6 @@
 import { useState, useEffect, createContext, useContext } from "react"
 import { supabase } from "./supabase"
+import { toast } from "./toast"
 
 const fmt = (n) => "₹" + Number(n).toLocaleString("en-IN")
 const nowStr = () => new Date().toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
@@ -288,6 +289,7 @@ function HomeTab({ units, tenants, activeNotices, payments, onSelectTenant, setT
       setTenants(ts => ts.map(t => t.id === tenant.id ? { ...t, payment_status: "Paid" } : t))
     }
     notifyTenant(payment.tenant_id, "Payment confirmed", `Your ${MONTHS[payment.month - 1]} ${payment.year} payment of ${fmt(payment.total_due || payment.amount)} is confirmed. Thank you!`)
+    toast("Payment confirmed, tenant notified")
   }
 
   const disputePayment = async (payment) => {
@@ -301,6 +303,7 @@ function HomeTab({ units, tenants, activeNotices, payments, onSelectTenant, setT
     }
     setPayments(ps => ps.map(p => p.id === payment.id ? { ...p, verification_status: "Disputed", dispute_reason: trimmed } : p))
     notifyTenant(payment.tenant_id, "Payment needs attention", trimmed ? `Your ${MONTHS[payment.month - 1]} payment could not be confirmed: ${trimmed}` : `Your ${MONTHS[payment.month - 1]} payment could not be confirmed. Please review and pay again.`, "/")
+    toast("Marked as disputed, tenant notified", "info")
   }
 
   return (
@@ -789,6 +792,7 @@ function TenantDetail({ tenant, unit, onClose, setTenants, setUnits, setActiveNo
     setTenants(ts => ts.map(t => t.id === tenant.id ? { ...t, agreement_status: "Complete" } : t))
     tenant.agreement_status = "Complete"
     setUploadingAgreement(false)
+    toast("Agreement uploaded")
   }
 
   const outstanding = payments.filter(p => p.status === "Unpaid").reduce((s, p) => s + Number(p.total_due || p.amount), 0)
@@ -813,16 +817,17 @@ function TenantDetail({ tenant, unit, onClose, setTenants, setUnits, setActiveNo
     await supabase.from("payment_records").update({ water_bill: water, electricity_bill: electricity, total_due: total, notes: billForm.notes }).eq("id", p.id)
     setPayments(ps => ps.map(x => x.id === p.id ? { ...x, water_bill: water, electricity_bill: electricity, total_due: total, notes: billForm.notes } : x))
     setEditingPayment(null)
+    toast("Bill updated")
   }
 
   const addPaymentMonth = async () => {
     const now = new Date()
-    if (payments.find(p => p.month === now.getMonth() + 1 && p.year === now.getFullYear())) { alert("This month already exists."); return }
+    if (payments.find(p => p.month === now.getMonth() + 1 && p.year === now.getFullYear())) { toast("This month already exists", "error"); return }
     const { data } = await supabase.from("payment_records").insert([{
       tenant_id: tenant.id, unit_id: unit.id, month: now.getMonth() + 1, year: now.getFullYear(),
       amount: tenant.rent, water_bill: 0, electricity_bill: 0, total_due: tenant.rent, status: "Unpaid",
     }]).select().single()
-    if (data) { setPayments(ps => [...ps, data]); if (setAllPayments) setAllPayments(ps => [...ps, data]) }
+    if (data) { setPayments(ps => [...ps, data]); if (setAllPayments) setAllPayments(ps => [...ps, data]); toast("Month added") }
   }
 
   const submitNotice = async () => {
@@ -895,8 +900,9 @@ function TenantDetail({ tenant, unit, onClose, setTenants, setUnits, setActiveNo
                     setPhoneVal(finalPhone)
                     setTenants(ts => ts.map(t => t.id === tenant.id ? { ...t, phone: finalPhone } : t))
                     tenant.phone = finalPhone
+                    toast("Phone number saved")
                   } else {
-                    alert("Could not save number: " + error.message)
+                    toast("Could not save number", "error")
                   }
                   setEditingPhone(false)
                 }}
@@ -1185,6 +1191,7 @@ function DeductionsSection({ notice, tenant, unit, lt, onClose, setTenants, setU
         setTenants(ts => ts.map(t => t.id === tenant.id ? { ...t, status: "Inactive" } : t))
         setActiveNotices && setActiveNotices(ns => ns.filter(n => n.id !== notice.id))
         setSettling(false)
+        toast("Settled, unit marked vacant")
         onClose()
       }} disabled={settling}
         style={{ width: "100%", padding: "14px", background: settling ? C.bg : C.green, border: "none", borderRadius: 14, cursor: settling ? "default" : "pointer", fontWeight: 700, color: settling ? C.muted : "#fff", fontSize: 14, fontFamily: "inherit" }}>
@@ -1240,6 +1247,7 @@ function BillsTab({ tenants, units }) {
       }
     }
     setSaving(false); setSaved(true)
+    toast("Bills saved for all units")
     setTimeout(() => setSaved(false), 3000)
   }
 

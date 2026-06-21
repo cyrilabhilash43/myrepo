@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "./supabase"
 import { getPushState, enablePush } from "./push"
+import { toast } from "./toast"
 
 const fmt = (n) => "₹" + Number(n).toLocaleString("en-IN")
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
@@ -395,6 +396,7 @@ function NotificationCard({ tenant, lt }) {
     const res = await enablePush(tenant.id)
     setWorking(false)
     setState(res.ok ? "subscribed" : await getPushState())
+    toast(res.ok ? "Notifications on" : "Could not enable notifications", res.ok ? "success" : "error")
   }
 
   let body, action = null
@@ -536,6 +538,7 @@ function PaymentsTab({ tenant, unit, payments, setPayments, lt }) {
     await supabase.from("payment_records").update({ verification_status: "Pending Verification", claimed_at: new Date().toISOString() }).eq("id", payment.id)
     setPayments(ps => ps.map(p => p.id === payment.id ? { ...p, verification_status: "Pending Verification" } : p))
     setPaying(null); setPayStep(0); setChosenApp(null)
+    toast("Marked as paid, awaiting confirmation")
   }
 
   const totalUnpaid = payments.filter(p => p.status === "Unpaid" && p.verification_status !== "Pending Verification").reduce((s, p) => s + Number(p.total_due || p.amount), 0)
@@ -810,7 +813,7 @@ function IssuesTab({ tenant, unit, lt }) {
       description: desc, photo_url: photoUrl, status: "Open",
       submitted_at: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
     }]).select().single()
-    if (data) { setIssues(p => [data, ...p]); setDesc(""); setPhoto(null); setPhotoPreview(null); setSubmitted(true); setTimeout(() => setSubmitted(false), 3000) }
+    if (data) { setIssues(p => [data, ...p]); setDesc(""); setPhoto(null); setPhotoPreview(null); setSubmitted(true); setTimeout(() => setSubmitted(false), 3000); toast("Issue reported") }
     setSubmitting(false)
   }
 
@@ -902,7 +905,7 @@ function NoticeTab({ tenant, unit, lt, payments }) {
       advance_amount: tenant.advance_amount, outstanding_dues: outstanding,
       settlement_amount: Math.abs(settlement), landlord_pays: settlement > 0, status: "Active",
     }]).select().single()
-    if (data) setNotice(data)
+    if (data) { setNotice(data); toast("Notice submitted") }
     setSubmitting(false)
   }
 
@@ -910,6 +913,7 @@ function NoticeTab({ tenant, unit, lt, payments }) {
     if (!window.confirm(lt.cancelNoticeSure)) return
     await supabase.from("notices").update({ status: "Cancelled" }).eq("id", notice.id)
     setNotice(null)
+    toast("Notice cancelled", "info")
   }
 
   const minDate = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]
