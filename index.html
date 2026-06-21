@@ -4,8 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-    <!-- PWA -->
-    <link rel="manifest" href="/manifest.json" />
+    <!-- PWA: build the manifest link inline at parse time so an installed
+         tenant app opens to that tenant's portal (not the landlord login).
+         Done before any static manifest link exists so iOS reads the right
+         start_url at "Add to Home Screen" time. -->
+    <script>
+      (function () {
+        var p = location.pathname, href = "/manifest.json";
+        if (p.indexOf("/tenant/") === 0) {
+          var token = p.slice(8).replace(/[^a-zA-Z0-9-]/g, "");
+          if (token) href = "/api/manifest?token=" + token;
+        }
+        var l = document.createElement("link");
+        l.rel = "manifest"; l.href = href;
+        document.head.appendChild(l);
+      })();
+    </script>
     <meta name="theme-color" content="#3820c0" />
 
     <!-- iOS PWA -->
