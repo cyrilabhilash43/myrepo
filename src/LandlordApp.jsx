@@ -471,9 +471,22 @@ function UnitsTab({ units, tenants, activeNotices, applications, onSelectTenant,
   const [appSheet, setAppSheet] = useState(null)
   const [copied, setCopied] = useState(false)
 
-  const verifyingPayments = []
+  const [waitlist, setWaitlist] = useState([])
+  useEffect(() => {
+    supabase.from("waitlist").select("*").eq("status", "Waiting").order("id", { ascending: false }).then(({ data }) => { if (data) setWaitlist(data) })
+  }, [])
 
   const pendingApps = applications.filter(a => a.status === "Pending")
+
+  const contactWaitlist = (w) => {
+    const msg = encodeURIComponent(`Hi ${w.name}! A flat has opened up in our building. Are you still looking? You can apply here: ${window.location.origin}/apply`)
+    window.open(`https://wa.me/${w.phone}?text=${msg}`, "_blank")
+  }
+  const removeWaitlist = async (id) => {
+    await supabase.from("waitlist").update({ status: "Removed" }).eq("id", id)
+    setWaitlist(ws => ws.filter(w => w.id !== id))
+    toast("Removed from waitlist", "info")
+  }
 
   const copyLink = (unitName) => {
     navigator.clipboard.writeText(`${window.location.origin}/apply/${unitName}`)
@@ -506,6 +519,23 @@ function UnitsTab({ units, tenants, activeNotices, applications, onSelectTenant,
             <div style={{ fontSize: 12, color: "#6d5ad6", marginTop: 2 }}>Tap to review</div>
           </div>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+      )}
+
+      {waitlist.length > 0 && (
+        <div style={{ background: C.surface, border: `0.5px solid ${C.border}`, borderRadius: 14, padding: "13px 14px", marginBottom: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 2 }}>Waitlist · {waitlist.length}</div>
+          <div style={{ fontSize: 12, color: C.muted, marginBottom: 10 }}>People waiting for a flat to open</div>
+          {waitlist.map(w => (
+            <div key={w.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0", borderTop: `0.5px solid ${C.border}` }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{w.name}{w.household_type ? <span style={{ color: C.muted, fontWeight: 400 }}> · {w.household_type}</span> : ""}</div>
+                <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>{[w.vehicles && `${w.vehicles} vehicle`, w.current_address].filter(Boolean).join(" · ") || "—"}</div>
+              </div>
+              <button onClick={() => contactWaitlist(w)} style={{ padding: "6px 12px", background: C.accentSoft, border: `0.5px solid ${C.accentBorder}`, borderRadius: 10, cursor: "pointer", fontWeight: 600, color: C.accent, fontSize: 12, fontFamily: "inherit" }}>Message</button>
+              <button onClick={() => removeWaitlist(w.id)} style={{ background: "none", border: "none", color: C.muted, cursor: "pointer", fontSize: 16, padding: 4, fontFamily: "inherit" }}>×</button>
+            </div>
+          ))}
         </div>
       )}
 
@@ -672,7 +702,7 @@ function ApplicationCard({ app, units, onRequestDocs, onReject, setApplications,
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
-        {[["Occupation", app.occupation], ["Income", app.monthly_income], ["People", app.people_count], ["Move-in", app.preferred_move_in]].filter(([, v]) => v).map(([l, v]) => (
+        {[["Occupation", app.occupation], ["Income", app.monthly_income], ["People", app.people_count], ["Move-in", app.preferred_move_in], ["Household", app.household_type], ["Vehicles", app.vehicles], ["Current address", app.current_address]].filter(([, v]) => v).map(([l, v]) => (
           <div key={l} style={{ background: C.surface, borderRadius: 10, padding: "9px 12px", border: `0.5px solid ${C.border}` }}>
             <div style={{ fontSize: 10, color: C.muted, marginBottom: 3 }}>{l}</div>
             <div style={{ fontSize: 13, fontWeight: 500, color: C.text }}>{v}</div>

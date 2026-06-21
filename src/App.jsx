@@ -145,8 +145,8 @@ export default function App() {
     if (path.startsWith("/tenant/")) {
       setTenantToken(path.replace("/tenant/", ""))
       setView("tenant")
-    } else if (path.startsWith("/apply/")) {
-      setApplyUnitName(path.replace("/apply/", ""))
+    } else if (path === "/apply" || path.startsWith("/apply/")) {
+      setApplyUnitName(path.startsWith("/apply/") ? path.replace("/apply/", "") : null)
       setView("apply")
     } else {
       // Installed tenant PWAs launch at "/" (manifest start_url). If this device
