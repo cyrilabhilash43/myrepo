@@ -80,7 +80,7 @@ export default function ApplicationPortal({ unitName }) {
   })
 
   useEffect(() => {
-    supabase.from("units").select("*").eq("status", "Vacant").order("id").then(({ data }) => {
+    supabase.rpc("get_vacant_units").then(({ data }) => {
       const vac = data || []
       setVacantUnits(vac)
       if (unitName) {
@@ -97,7 +97,7 @@ export default function ApplicationPortal({ unitName }) {
   useEffect(() => {
     if (!applicationId) return
     const check = async () => {
-      const { data } = await supabase.from("applications").select("docs_requested").eq("id", applicationId).maybeSingle()
+      const { data } = await supabase.rpc("application_status", { p_id: applicationId })
       if (data?.docs_requested) { setDocsRequested(true); return true }
       return false
     }
@@ -109,15 +109,15 @@ export default function ApplicationPortal({ unitName }) {
   const submitApplication = async () => {
     if (!form.name.trim() || !form.phone.trim()) { alert("Please fill in your name and WhatsApp number."); return }
     setSubmitting(true)
-    const { data, error } = await supabase.from("applications").insert([{
+    const { data, error } = await supabase.rpc("submit_application", { p: {
       unit_id: unit.id, unit_name: unit.name,
       name: form.name.trim(), phone: form.phone.trim(),
       occupation: form.occupation, monthly_income: form.monthly_income,
       people_count: form.people_count, preferred_move_in: form.preferred_move_in,
       message: form.message, household_type: form.household_type,
-      vehicles: form.vehicles, current_address: form.current_address, status: "Pending",
-    }]).select().single()
-    if (data) { setApplicationId(data.id); setSubmitted(true); notifyLandlord(`${form.name} applied for Unit ${unit.name}`) }
+      vehicles: form.vehicles, current_address: form.current_address,
+    } })
+    if (!error && data?.id) { setApplicationId(data.id); setSubmitted(true); notifyLandlord(`${form.name} applied for Unit ${unit.name}`) }
     else alert("Something went wrong. Please try again.")
     setSubmitting(false)
   }
@@ -125,12 +125,12 @@ export default function ApplicationPortal({ unitName }) {
   const submitWaitlist = async () => {
     if (!form.name.trim() || !form.phone.trim()) { alert("Please fill in your name and WhatsApp number."); return }
     setSubmitting(true)
-    const { data } = await supabase.from("waitlist").insert([{
+    const { error } = await supabase.rpc("submit_waitlist", { p: {
       name: form.name.trim(), phone: form.phone.trim(),
       household_type: form.household_type, vehicles: form.vehicles,
       current_address: form.current_address, message: form.message,
-    }]).select().single()
-    if (data) { setWaitlisted(true); notifyLandlord(`${form.name} joined the waitlist`) }
+    } })
+    if (!error) { setWaitlisted(true); notifyLandlord(`${form.name} joined the waitlist`) }
     else alert("Something went wrong. Please try again.")
     setSubmitting(false)
   }
@@ -144,7 +144,7 @@ export default function ApplicationPortal({ unitName }) {
     if (data) {
       const { data: u } = await supabase.storage.from("documents").createSignedUrl(data.path, 3600)
       setUploadedDocs(p => ({ ...p, [docType]: { name: file.name, url: u?.signedUrl } }))
-      await supabase.from("applications").update({ [`${docType}_uploaded`]: true }).eq("id", applicationId)
+      await supabase.rpc("application_mark_doc", { p_id: applicationId, p_doc: docType })
     }
     setUploadingDoc(p => ({ ...p, [docType]: false }))
   }
