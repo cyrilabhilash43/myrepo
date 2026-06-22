@@ -142,8 +142,8 @@ export default function ApplicationPortal({ unitName }) {
     const path = `applications/${applicationId}/${docType}_${Date.now()}_${file.name}`
     const { data } = await supabase.storage.from("documents").upload(path, file, { upsert: true })
     if (data) {
-      const { data: u } = await supabase.storage.from("documents").createSignedUrl(data.path, 3600)
-      setUploadedDocs(p => ({ ...p, [docType]: { name: file.name, url: u?.signedUrl } }))
+      // Storage is locked to the public key; just mark as uploaded (no re-view needed)
+      setUploadedDocs(p => ({ ...p, [docType]: { name: file.name } }))
       await supabase.rpc("application_mark_doc", { p_id: applicationId, p_doc: docType })
     }
     setUploadingDoc(p => ({ ...p, [docType]: false }))
@@ -220,9 +220,8 @@ export default function ApplicationPortal({ unitName }) {
                     <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{uploadedDocs[doc.key] ? uploadedDocs[doc.key].name : doc.desc}</div>
                   </div>
                   {uploadedDocs[doc.key] ? (
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <a href={uploadedDocs[doc.key].url} target="_blank" rel="noreferrer" style={{ padding: "7px 12px", background: C.greenSoft, border: `0.5px solid ${C.greenBorder}`, borderRadius: 10, fontSize: 12, color: C.green, fontWeight: 600, textDecoration: "none" }}>View</a>
-                      <span style={{ fontSize: 18, color: C.green }}>✓</span>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center", color: C.green, fontWeight: 600, fontSize: 13 }}>
+                      <span style={{ fontSize: 18 }}>✓</span> Uploaded
                     </div>
                   ) : uploadingDoc[doc.key] ? (
                     <div style={{ fontSize: 12, color: C.accent, fontWeight: 500 }}>Uploading...</div>

@@ -793,25 +793,23 @@ function DocumentsTab({ tenant, unit, lt, token }) {
   const [uploaded, setUploaded] = useState({})
   const [agreement, setAgreement] = useState(null)
 
-  useEffect(() => {
-    // Load existing docs
-    supabase.storage.from("documents").list(`${tenant.id}`, { limit: 50 }).then(({ data }) => {
-      if (data && data.length > 0) {
-        data.forEach(async f => {
-          const { data: u } = await supabase.storage.from("documents").createSignedUrl(`${tenant.id}/${f.name}`, 3600)
+  const loadDocs = async () => {
+    try {
+      const r = await fetch("/api/doc-url", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token }) })
+      const j = await r.json()
+      if (j.ok) {
+        const up = {}
+        ;(j.docs || []).forEach(f => {
           const type = f.name.startsWith("aadhaar") ? "aadhaar" : f.name.startsWith("pan") ? "pan" : "other"
-          if (type !== "other") setUploaded(p => ({ ...p, [type]: { name: f.name, url: u?.signedUrl } }))
+          if (type !== "other") up[type] = { name: f.name, url: f.url }
         })
+        setUploaded(up)
+        setAgreement(j.agreement || null)
       }
-    })
-    supabase.storage.from("documents").list(`agreements/${tenant.id}`).then(async ({ data }) => {
-      if (data && data.length > 0) {
-        const file = data[0]
-        const { data: u } = await supabase.storage.from("documents").createSignedUrl(`agreements/${tenant.id}/${file.name}`, 3600)
-        setAgreement({ name: file.name, url: u?.signedUrl })
-      }
-    })
-  }, [tenant.id])
+    } catch { /* ignore */ }
+  }
+
+  useEffect(() => { loadDocs() }, [token])
 
   const handleUpload = async (e, docType) => {
     const file = e.target.files[0]
@@ -820,11 +818,10 @@ function DocumentsTab({ tenant, unit, lt, token }) {
     const path = `${tenant.id}/${docType}_${Date.now()}_${file.name}`
     const { data } = await supabase.storage.from("documents").upload(path, file, { upsert: true })
     if (data) {
-      const { data: u } = await supabase.storage.from("documents").createSignedUrl(data.path, 3600)
-      setUploaded(p => ({ ...p, [docType]: { name: file.name, url: u?.signedUrl } }))
       if (docType === "aadhaar" || docType === "pan") {
         await supabase.rpc("tenant_mark_docs_submitted", { p_token: token })
       }
+      await loadDocs() // refresh signed URLs through the server
     }
     setUploading(p => ({ ...p, [docType]: false }))
   }
