@@ -60,18 +60,29 @@ cd /Users/cyrilsmacbookair/building-app && vercel build --prod && vercel --prod 
   agreements (missing feature).
 - Confirm the `units.slice(0,3)` -> `units.map` fix in `LandlordApp.jsx` is actually deployed.
 
-## Security posture (reviewed 2026-06-21)
-- **Closed:** landlord PIN hash no longer readable by the public key (`verify_landlord_pin`
-  is SECURITY DEFINER; column-level grant on `landlord_users`). DELETE revoked from `anon`
-  on all core tables. ntfy topic moved server-side (`/api/notify-landlord`).
-- **Mitigated:** Aadhaar/PAN documents - data minimization (landlord can delete ID docs
-  after verifying; applicant docs auto-deleted on approve/reject). Bucket itself is still
-  open to the publishable key.
-- **KNOWN, DEFERRED (needs auth rebuild):** the publishable key still grants read + write/update
-  to all tables (tenant tokens, PII readable; data can be tampered/inserted). Root cause: the
-  landlord app + public pages share the anon key, so RLS can't distinguish them without real
-  landlord authentication. Full fix = Supabase Auth for landlords + token-scoped RPCs for
-  tenants + lock all tables. `SUPABASE_SERVICE_ROLE` is already set in Vercel for when this is done.
+## Security posture (full lockdown completed 2026-06-22)
+The app now uses a proper auth + access-control model. Architecture:
+- **Landlords** authenticate via `/api/landlord-login` (verifies PIN through the
+  `verify_landlord_pin` SECURITY DEFINER RPC, then mints a real Supabase session via
+  magiclink token + client `verifyOtp`). PIN UX unchanged. Landlord app runs as the
+  `authenticated` role with full table + storage access.
+- **Tenants** use token-scoped SECURITY DEFINER RPCs only: `get_tenant_portal`,
+  `tenant_mark_paid`, `tenant_submit_notice`, `tenant_cancel_notice`, `tenant_report_issue`,
+  `tenant_save_push`, `tenant_mark_docs_submitted`. No direct table access.
+- **Public apply page** uses minimal RPCs: `get_vacant_units`, `submit_application`,
+  `submit_waitlist`, `application_status`, `application_mark_doc`.
+- **Tables:** `anon` has NO access to any table (revoked) except column-level
+  `landlord_users(id,name,role)` for the login screen. `authenticated` has full access.
+- **Storage (`documents` bucket):** anon cannot read/list/sign sensitive docs (ID cards,
+  agreements, applicant docs); issue photos (`issues/*`) stay anon-readable; uploads (insert)
+  still work for tenants/applicants; authenticated landlords have full access. Tenants view
+  their docs via `/api/doc-url` (service role, token-scoped). Plus data-minimization (delete
+  ID docs after verify; applicant docs auto-deleted on approve/reject).
+- **Server keys:** `SUPABASE_SERVICE_ROLE` in Vercel powers `/api/landlord-login`,
+  `/api/doc-url`, `/api/notify`. Never in the client bundle.
+- **Gotcha:** any NEW table must be granted to `authenticated` and (if tenant/public needs it)
+  exposed via a SECURITY DEFINER RPC - never granted to `anon` directly. `maintenance_requests`
+  was initially missed in the table lockdown; don't repeat that.
 
 ## How to work with Cyril
 - Casual but focused. Tight responses, no fluff.
